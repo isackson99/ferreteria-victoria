@@ -1,0 +1,230 @@
+<app-navbar></app-navbar>
+
+<div class="usuarios-page">
+  <!-- Tabs -->
+  <div class="page-tabs">
+    <button class="ptab" [class.activo]="tab() === 'usuarios'" (click)="tab.set('usuarios')">
+      <mat-icon>people</mat-icon> Usuarios
+    </button>
+    <button class="ptab" [class.activo]="tab() === 'roles'" (click)="tab.set('roles')">
+      <mat-icon>admin_panel_settings</mat-icon> Roles y Permisos
+    </button>
+  </div>
+
+  <!-- TAB USUARIOS -->
+  @if (tab() === 'usuarios') {
+    <div class="two-col">
+      <!-- Lista izquierda -->
+      <div class="col-lista">
+        <div class="lista-header">
+          <div class="search-box">
+            <mat-icon>search</mat-icon>
+            <input placeholder="Buscar usuario..." [ngModel]="busqueda()" (ngModelChange)="busqueda.set($event)">
+          </div>
+          <button class="btn-nuevo" (click)="nuevo()">
+            <mat-icon>person_add</mat-icon> Nuevo
+          </button>
+        </div>
+
+        @if (cargando()) {
+          <div class="cargando"><mat-icon class="spin">sync</mat-icon></div>
+        } @else {
+          <div class="usuario-list">
+            @for (u of usuariosFiltrados(); track u.id) {
+              <div class="usuario-card" [class.seleccionado]="usuarioSeleccionado()?.id === u.id"
+                   [class.inactivo]="!u.is_active" (click)="seleccionar(u)">
+                <div class="avatar" [style.background]="colorRol(u.rol_nombre)">{{ iniciales(u) }}</div>
+                <div class="info">
+                  <div class="nombre">{{ u.first_name ? u.first_name + ' ' + u.last_name : u.username }}</div>
+                  <div class="sub">@{{ u.username }}</div>
+                </div>
+                <div class="badges">
+                  @if (u.is_superuser) {
+                    <span class="badge-rol" style="background:#b71c1c">Superuser</span>
+                  } @else if (u.rol_nombre) {
+                    <span class="badge-rol" [style.background]="colorRol(u.rol_nombre)">{{ u.rol_nombre }}</span>
+                  }
+                  @if (!u.is_active) {
+                    <span class="badge-inactivo">Inactivo</span>
+                  }
+                </div>
+              </div>
+            }
+            @if (usuariosFiltrados().length === 0) {
+              <div class="empty-list">No se encontraron usuarios</div>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Formulario derecho -->
+      <div class="col-form">
+        @if (modoFormulario()) {
+          <div class="form-panel">
+            <div class="form-title">
+              <mat-icon>{{ modoFormulario() === 'nuevo' ? 'person_add' : 'edit' }}</mat-icon>
+              {{ modoFormulario() === 'nuevo' ? 'Nuevo Usuario' : 'Editar Usuario' }}
+            </div>
+
+            <div class="form-grid">
+              <label class="field-full">
+                Username *
+                <input class="inp" [ngModel]="form().username" (ngModelChange)="updateForm('username', $event)" placeholder="username">
+              </label>
+              <label class="field">
+                Nombre
+                <input class="inp" [ngModel]="form().first_name" (ngModelChange)="updateForm('first_name', $event)" placeholder="Nombre">
+              </label>
+              <label class="field">
+                Apellido
+                <input class="inp" [ngModel]="form().last_name" (ngModelChange)="updateForm('last_name', $event)" placeholder="Apellido">
+              </label>
+              <label class="field-full">
+                Email
+                <input class="inp" type="email" [ngModel]="form().email" (ngModelChange)="updateForm('email', $event)" placeholder="email@ejemplo.com">
+              </label>
+              <label class="field-full">
+                Rol
+                <select class="inp" [ngModel]="form().rol" (ngModelChange)="updateForm('rol', $event ? +$event : null)">
+                  <option [ngValue]="null">Sin rol</option>
+                  @for (r of roles(); track r.id) {
+                    <option [value]="r.id">{{ r.nombre }}</option>
+                  }
+                </select>
+              </label>
+
+              <!-- Contraseña solo en nuevo -->
+              @if (modoFormulario() === 'nuevo') {
+                <label class="field">
+                  Contraseña *
+                  <input class="inp" type="password" [ngModel]="form().password" (ngModelChange)="updateForm('password', $event)" placeholder="Mínimo 4 caracteres">
+                </label>
+                <label class="field">
+                  Confirmar contraseña *
+                  <input class="inp" type="password" [ngModel]="form().confirmar_password" (ngModelChange)="updateForm('confirmar_password', $event)" placeholder="Repetir contraseña">
+                </label>
+              }
+
+              <!-- Cambiar contraseña en editar -->
+              @if (modoFormulario() === 'editar') {
+                <label class="field-full toggle-row">
+                  <input type="checkbox" [ngModel]="form().cambiar_password" (ngModelChange)="updateForm('cambiar_password', $event)">
+                  Cambiar contraseña
+                </label>
+                @if (form().cambiar_password) {
+                  <label class="field">
+                    Nueva contraseña
+                    <input class="inp" type="password" [ngModel]="form().password" (ngModelChange)="updateForm('password', $event)">
+                  </label>
+                  <label class="field">
+                    Confirmar
+                    <input class="inp" type="password" [ngModel]="form().confirmar_password" (ngModelChange)="updateForm('confirmar_password', $event)">
+                  </label>
+                }
+              }
+
+              <div class="field-full toggle-row">
+                <label>
+                  <input type="checkbox" [ngModel]="form().is_active" (ngModelChange)="updateForm('is_active', $event)">
+                  Usuario activo
+                </label>
+                @if (authService.usuarioActual()?.is_superuser) {
+                  <label>
+                    <input type="checkbox" [ngModel]="form().is_superuser" (ngModelChange)="updateForm('is_superuser', $event)">
+                    Superusuario
+                  </label>
+                }
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button class="btn-cancelar" (click)="cancelar()">Cancelar</button>
+              <button class="btn-guardar" (click)="guardar()" [disabled]="guardando()">
+                @if (guardando()) { Guardando... } @else { Guardar }
+              </button>
+            </div>
+          </div>
+        } @else {
+          <div class="form-empty">
+            <mat-icon>person</mat-icon>
+            <p>Selecciona un usuario o crea uno nuevo</p>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- TAB ROLES -->
+  @if (tab() === 'roles') {
+    <div class="two-col">
+      <!-- Lista roles -->
+      <div class="col-lista">
+        <div class="lista-header">
+          <span class="lista-titulo">Roles</span>
+          <button class="btn-nuevo" (click)="creandoRol.set(true)">
+            <mat-icon>add</mat-icon> Nuevo Rol
+          </button>
+        </div>
+
+        @if (creandoRol()) {
+          <div class="nuevo-rol-box">
+            <input class="inp" [ngModel]="nuevoRolNombre()" (ngModelChange)="nuevoRolNombre.set($event)" placeholder="Nombre del rol" (keyup.enter)="crearRol()">
+            <div class="flex-row">
+              <button class="btn-cancelar" (click)="creandoRol.set(false); nuevoRolNombre.set('')">Cancelar</button>
+              <button class="btn-guardar" (click)="crearRol()">Crear</button>
+            </div>
+          </div>
+        }
+
+        <div class="rol-list">
+          @for (r of roles(); track r.id) {
+            <div class="rol-card" [class.seleccionado]="rolSeleccionado()?.id === r.id" (click)="seleccionarRol(r)">
+              <div class="rol-avatar" [style.background]="colorRol(r.nombre)">{{ r.nombre[0] }}</div>
+              <div class="rol-info">
+                <div class="rol-nombre">{{ r.nombre }}</div>
+                <div class="rol-sub">{{ r.permisos.length }} permisos</div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Permisos -->
+      <div class="col-form">
+        @if (rolSeleccionado()) {
+          <div class="form-panel">
+            <div class="form-title">
+              <mat-icon>admin_panel_settings</mat-icon>
+              Permisos de: {{ rolSeleccionado()!.nombre }}
+            </div>
+            <div class="permisos-grid">
+              @for (p of permisos(); track p.id) {
+                <label class="permiso-row">
+                  <input type="checkbox" [ngModel]="tienePermiso(p.id)" (ngModelChange)="togglePermiso(p.id)">
+                  <div class="permiso-info">
+                    <span class="permiso-codigo">{{ p.codigo }}</span>
+                    <span class="permiso-desc">{{ p.descripcion }}</span>
+                  </div>
+                </label>
+              }
+              @if (permisos().length === 0) {
+                <div class="empty-list">No hay permisos configurados</div>
+              }
+            </div>
+            <div class="form-actions">
+              <button class="btn-cancelar" (click)="cancelarRol()">Cancelar</button>
+              <button class="btn-guardar" (click)="guardarPermisos()" [disabled]="guardando()">
+                @if (guardando()) { Guardando... } @else { Guardar permisos }
+              </button>
+            </div>
+          </div>
+        } @else {
+          <div class="form-empty">
+            <mat-icon>admin_panel_settings</mat-icon>
+            <p>Selecciona un rol para editar sus permisos</p>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>

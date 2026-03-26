@@ -1,0 +1,1003 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.ticket-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  background: white;
+  overflow: hidden;
+  position: relative; // Para el modal de cobro
+}
+
+// ---- Tabla ----
+
+.tabla-container {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 240px;
+  color: #bdbdbd;
+  gap: 12px;
+
+  mat-icon {
+    font-size: 56px;
+    width: 56px;
+    height: 56px;
+  }
+
+  p {
+    font-size: 14px;
+    margin: 0;
+  }
+}
+
+.items-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+
+  thead tr {
+    background: #1a237e;
+    color: white;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+
+  th {
+    padding: 9px 10px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+    border-right: 1px solid rgba(255, 255, 255, 0.15);
+
+    &:last-child { border-right: none; }
+  }
+
+  td {
+    padding: 7px 10px;
+    border-bottom: 1px solid #f0f0f0;
+    vertical-align: middle;
+  }
+}
+
+.col-codigo  { width: 120px; min-width: 90px; }
+.col-desc    { min-width: 200px; }
+.col-precio  { width: 110px; }
+.col-cant    { width: 130px; }
+.col-importe { width: 110px; }
+.col-stock   { width: 90px; }
+.col-desc2   { width: 80px; }
+
+.row-par     { background: #ffffff; }
+.row-impar   { background: #f8f9ff; }
+
+.row-seleccionado {
+  background: #e8eaf6 !important;
+  outline: 2px solid #3949ab;
+  outline-offset: -1px;
+}
+
+tr:hover td {
+  background: #eef0fb !important;
+  cursor: pointer;
+}
+
+.td-codigo {
+  font-family: monospace;
+  font-size: 12px;
+  color: #616161;
+}
+
+.td-num {
+  text-align: right;
+}
+
+.td-cant {
+  text-align: center;
+  padding: 4px 6px !important;
+}
+
+// ---- Controles de cantidad ----
+
+.qty-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.qty-btn {
+  width: 24px;
+  height: 24px;
+  border: 1px solid #bdbdbd;
+  border-radius: 3px;
+  background: white;
+  color: #424242;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.12s;
+  flex-shrink: 0;
+
+  &:hover:not(:disabled) {
+    background: #e8eaf6;
+    border-color: #3949ab;
+    color: #1a237e;
+  }
+
+  &:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+
+  &.qty-dec:hover:not(:disabled) {
+    background: #ffebee;
+    border-color: #c62828;
+    color: #c62828;
+  }
+}
+
+.qty-value {
+  min-width: 28px;
+  text-align: center;
+  font-weight: 700;
+  color: #1a237e;
+  font-size: 14px;
+}
+
+// ---- Confirmación de eliminación inline ----
+
+.confirm-delete {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  justify-content: center;
+}
+
+.confirm-msg {
+  font-size: 11px;
+  color: #c62828;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.btn-confirm-si {
+  padding: 2px 8px;
+  background: #c62828;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.12s;
+
+  &:hover { background: #b71c1c; }
+  &:disabled { opacity: 0.5; cursor: default; }
+}
+
+.btn-confirm-no {
+  padding: 2px 8px;
+  background: white;
+  color: #616161;
+  border: 1px solid #bdbdbd;
+  border-radius: 3px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.12s;
+
+  &:hover { background: #f5f5f5; }
+}
+
+.td-importe {
+  font-weight: 700;
+  color: #1a237e;
+}
+
+.td-desc { max-width: 300px; }
+
+.desc-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.desc-nombre {
+  font-weight: 500;
+  color: #212121;
+}
+
+.desc-badges {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.badge-mayoreo {
+  background: #e3f2fd;
+  color: #1565c0;
+  border-radius: 3px;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.badge-comun {
+  background: #f3e5f5;
+  color: #7b1fa2;
+  border-radius: 3px;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.btn-aplicar-mayoreo {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: #fff8e1;
+  color: #e65100;
+  border: 1px solid #ffcc02;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+
+  &:hover {
+    background: #ff6f00;
+    color: white;
+    border-color: #ff6f00;
+  }
+
+  &:disabled { opacity: 0.5; cursor: default; }
+}
+
+.btn-revertir-mayoreo {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #a5d6a7;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+
+  &:hover {
+    background: #c8e6c9;
+    border-color: #388e3c;
+  }
+
+  &:disabled { opacity: 0.5; cursor: default; }
+}
+
+.col-stock { text-align: center; }
+
+.sin-stock {
+  background: #ffebee;
+  color: #c62828;
+  font-weight: 700;
+  border-radius: 3px;
+  padding: 2px 6px;
+  display: inline-block;
+}
+
+.con-stock {
+  background: #e8f5e9;
+  color: #2e7d32;
+  font-weight: 600;
+  border-radius: 3px;
+  padding: 2px 6px;
+  display: inline-block;
+}
+
+// ---- Footer ----
+
+.ticket-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: #1a237e;
+  color: white;
+  flex-shrink: 0;
+  border-top: 3px solid #0d1b6e;
+}
+
+.footer-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 16px;
+}
+
+.footer-totales {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+// ── Cliente factura asignado ──
+.cliente-factura-asignado {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 16px;
+  background: #e8f5e9;
+  color: #1b5e20;
+  font-size: 13px;
+  font-weight: 500;
+
+  mat-icon { font-size: 15px; width: 15px; height: 15px; color: #2e7d32; flex-shrink: 0; }
+  span { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cf-rut { flex: 0; color: #4caf50; font-size: 12px; }
+}
+
+.cf-quitar {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  color: #4caf50;
+  border-radius: 50%;
+  margin-left: 2px;
+  transition: background 0.15s;
+  flex-shrink: 0;
+
+  mat-icon { font-size: 15px; width: 15px; height: 15px; color: #4caf50; }
+  &:hover { background: rgba(0,0,0,0.08); }
+}
+
+.total-item {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.total-label {
+  font-size: 12px;
+  opacity: 0.8;
+  white-space: nowrap;
+}
+
+.total-valor {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.total-monto {
+  font-size: 24px;
+  font-weight: 800;
+  color: #ffeb3b;
+}
+
+.cambio-positivo {
+  color: #69f0ae;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.total-sep {
+  width: 1px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.25);
+  margin: 0 4px;
+}
+
+.footer-acciones {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.btn-cobrar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 20px;
+  background: #ffeb3b;
+  color: #1a237e;
+  border: none;
+  border-radius: 4px;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.15s;
+
+  mat-icon { font-size: 20px; width: 20px; height: 20px; }
+
+  &:hover { background: #fdd835; transform: scale(1.02); }
+  &:disabled { background: #78909c; color: white; cursor: default; transform: none; }
+}
+
+.btn-accion-sec {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  background: rgba(255, 255, 255, 0.12);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+
+  mat-icon { font-size: 16px; width: 16px; height: 16px; }
+
+  &:hover { background: rgba(255, 255, 255, 0.22); }
+}
+
+// ---- Modal Cobro ----
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 500;
+  animation: fadeIn 0.15s ease;
+}
+
+.modal-box {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  width: 540px;
+  max-width: 95vw;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(24px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 20px;
+  background: #1a237e;
+  color: white;
+  border-radius: 8px 8px 0 0;
+
+  mat-icon { font-size: 20px; width: 20px; height: 20px; }
+
+  h3 { flex: 1; margin: 0; font-size: 17px; font-weight: 700; }
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  opacity: 0.8;
+  display: flex;
+  border-radius: 4px;
+  padding: 2px;
+  transition: all 0.15s;
+
+  &:hover { opacity: 1; background: rgba(255, 255, 255, 0.2); }
+  mat-icon { font-size: 20px; width: 20px; height: 20px; }
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+.modal-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 20px;
+  border-top: 1px solid #e0e0e0;
+  background: #fafafa;
+  border-radius: 0 0 8px 8px;
+}
+
+.footer-fila-sec {
+  display: flex;
+  gap: 8px;
+}
+
+.footer-fila-ppal {
+  display: flex;
+  gap: 8px;
+}
+
+.cobro-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #e8eaf6;
+  border-radius: 6px;
+  padding: 14px 20px;
+  margin-bottom: 18px;
+}
+
+.cobro-total-label {
+  font-size: 14px;
+  color: #616161;
+  font-weight: 500;
+}
+
+.cobro-total-monto {
+  font-size: 32px;
+  font-weight: 800;
+  color: #1a237e;
+}
+
+.cobro-metodos {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.metodo-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 8px;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  background: white;
+  color: #616161;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.15s;
+
+  mat-icon { font-size: 22px; width: 22px; height: 22px; }
+
+  &:hover {
+    border-color: #1a237e;
+    color: #1a237e;
+    background: #e8eaf6;
+  }
+
+  &.activo {
+    border-color: #1a237e;
+    background: #1a237e;
+    color: white;
+  }
+}
+
+.cobro-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+
+  label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #616161;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+}
+
+.cobro-input {
+  height: 44px;
+  padding: 0 14px;
+  font-size: 20px;
+  font-weight: 700;
+  border: 2px solid #bdbdbd;
+  border-radius: 4px;
+  outline: none;
+  color: #1a237e;
+  text-align: right;
+  transition: border-color 0.15s, box-shadow 0.15s;
+
+  &:focus {
+    border-color: #1a237e;
+    box-shadow: 0 0 0 3px rgba(26, 35, 126, 0.12);
+  }
+}
+
+// ---- Último Ticket (receipt) ----
+
+.ticket-receipt {
+  width: 400px;
+  max-width: 95vw;
+}
+
+.receipt-body {
+  padding: 16px 20px;
+}
+
+.receipt-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #757575;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px dashed #e0e0e0;
+}
+
+.receipt-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-bottom: 12px;
+
+  thead tr {
+    border-bottom: 2px solid #1a237e;
+  }
+
+  th {
+    padding: 5px 6px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #424242;
+    text-transform: uppercase;
+  }
+
+  td {
+    padding: 5px 6px;
+    border-bottom: 1px solid #f0f0f0;
+    vertical-align: top;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+}
+
+.rc  { text-align: center; }
+.rr  { text-align: right; white-space: nowrap; }
+
+.rc-mayoreo {
+  display: inline-block;
+  margin-left: 4px;
+  background: #e3f2fd;
+  color: #1565c0;
+  font-size: 9px;
+  font-weight: 700;
+  border-radius: 2px;
+  padding: 0 4px;
+}
+
+.receipt-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #1a237e;
+  color: white;
+  border-radius: 4px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.receipt-total-monto {
+  font-size: 24px;
+  font-weight: 800;
+  color: #ffeb3b;
+}
+
+.receipt-pago {
+  background: #f5f5f5;
+  border-radius: 4px;
+  padding: 10px 14px;
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.receipt-pago-row {
+  display: flex;
+  justify-content: space-between;
+  color: #424242;
+}
+
+.receipt-pago-metodo {
+  font-weight: 700;
+  color: #1a237e;
+}
+
+.receipt-vuelto {
+  color: #1b5e20;
+  font-weight: 700;
+}
+
+.cobro-input-readonly {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  background: #f5f5f5;
+  border-color: #e0e0e0;
+  color: #757575;
+  cursor: default;
+}
+
+.cobro-cambio {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #e8f5e9;
+  border-radius: 6px;
+  padding: 10px 16px;
+  color: #1b5e20;
+
+  mat-icon { color: #2e7d32; font-size: 22px; width: 22px; height: 22px; }
+  span { font-size: 14px; }
+  strong { font-size: 22px; font-weight: 800; margin-left: auto; }
+}
+
+.btn-cancelar-venta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 14px;
+  background: white;
+  color: #c62828;
+  border: 1px solid #ef9a9a;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+
+  mat-icon { font-size: 16px; width: 16px; height: 16px; }
+  &:hover { background: #ffebee; border-color: #c62828; }
+}
+
+.btn-cerrar-cobro {
+  margin-left: auto;
+  padding: 8px 18px;
+  background: white;
+  color: #616161;
+  border: 1px solid #bdbdbd;
+  border-radius: 4px;
+  font-size: 14px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &:hover { background: #f5f5f5; }
+}
+
+.btn-cobrar-imprimir {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 11px 16px;
+  background: #1a237e;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s;
+
+  mat-icon { font-size: 20px; width: 20px; height: 20px; flex-shrink: 0; }
+  &:hover { background: #283593; }
+  &:disabled { background: #9e9e9e; cursor: default; }
+}
+
+// ---- Selector de cliente crédito ----
+
+.credito-selector {
+  margin-top: 14px;
+  border: 2px solid #1a237e;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.credito-cargando {
+  padding: 14px;
+  text-align: center;
+  color: #757575;
+  font-size: 13px;
+}
+
+.credito-busqueda {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 13px;
+  border: none;
+  border-bottom: 1px solid #e0e0e0;
+  outline: none;
+  box-sizing: border-box;
+  background: #f5f7ff;
+
+  &:focus { background: #eef0fb; }
+  &::placeholder { color: #9e9e9e; }
+}
+
+.credito-listbox {
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.credito-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  border-bottom: 1px solid #f5f5f5;
+  transition: background 0.1s;
+
+  &:last-child { border-bottom: none; }
+  &:hover { background: #e8eaf6; }
+}
+
+.credito-row-sel {
+  background: #1a237e !important;
+  color: white;
+
+  .cr-id, .cr-saldo { color: rgba(255,255,255,0.75); }
+}
+
+.cr-id {
+  min-width: 28px;
+  font-size: 11px;
+  color: #9e9e9e;
+  font-family: monospace;
+}
+
+.cr-nombre {
+  flex: 1;
+  font-weight: 500;
+}
+
+.cr-saldo {
+  font-size: 11px;
+  color: #757575;
+  white-space: nowrap;
+}
+
+.credito-empty {
+  padding: 16px;
+  text-align: center;
+  color: #9e9e9e;
+  font-size: 13px;
+}
+
+.credito-sel-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: #e8f5e9;
+  color: #1b5e20;
+  font-size: 13px;
+  border-top: 1px solid #c8e6c9;
+
+  mat-icon { font-size: 16px; width: 16px; height: 16px; color: #2e7d32; }
+  strong { font-weight: 700; }
+}
+
+.btn-confirmar {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 11px 16px;
+  background: white;
+  color: #424242;
+  border: 2px solid #bdbdbd;
+  border-radius: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.15s;
+
+  mat-icon { font-size: 20px; width: 20px; height: 20px; flex-shrink: 0; }
+  &:hover { background: #f5f5f5; border-color: #9e9e9e; }
+  &:disabled { opacity: 0.5; cursor: default; }
+}
+
+// ---- Modal reimprimir (cliente factura) ----
+
+.modal-box-sm {
+  width: 400px;
+}
+
+.reimpr-msg {
+  font-size: 14px;
+  color: #424242;
+  margin-bottom: 18px;
+  line-height: 1.5;
+}
+
+.reimpr-opciones {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.btn-reimpr-opcion {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #e8eaf6;
+  color: #1a237e;
+  border: 2px solid #c5cae9;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+
+  mat-icon { font-size: 18px; width: 18px; height: 18px; flex-shrink: 0; }
+  &:hover { background: #c5cae9; border-color: #1a237e; }
+}
+
+.btn-reimpr-ambas {
+  background: #1a237e;
+  color: white;
+  border-color: #1a237e;
+
+  &:hover { background: #283593; border-color: #283593; }
+}
+
+.btn-reimpr-cancelar {
+  padding: 10px 16px;
+  background: white;
+  color: #757575;
+  border: 1px solid #bdbdbd;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+
+  &:hover { background: #f5f5f5; }
+}

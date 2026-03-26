@@ -1,0 +1,72 @@
+<nav class="navbar" (click)="cerrarPanel()">
+  <!-- Marca -->
+  <div class="navbar-brand">
+    <mat-icon>hardware</mat-icon>
+    <span>Ferretería Victoria</span>
+  </div>
+
+  <!-- Menú de navegación -->
+  <div class="navbar-menu">
+    @for (item of navItems; track item.label) {
+      <a class="nav-item" [routerLink]="item.ruta" routerLinkActive="activo">
+        {{ item.label }}
+      </a>
+    }
+  </div>
+
+  <!-- Campana de notificaciones -->
+  <div class="campana-wrapper" (click)="$event.stopPropagation()">
+    <button class="campana-btn" (click)="togglePanel()" [class.activo]="panelAbierto()">
+      <mat-icon>notifications</mat-icon>
+      @if (notifSvc.cantidadNoLeidas() > 0) {
+        <span class="badge">{{ notifSvc.cantidadNoLeidas() > 99 ? '99+' : notifSvc.cantidadNoLeidas() }}</span>
+      }
+    </button>
+
+    @if (panelAbierto()) {
+      <div class="notif-panel">
+        <div class="notif-panel-header">
+          <span>Notificaciones</span>
+          @if (notifSvc.cantidadNoLeidas() > 0) {
+            <button class="btn-marcar-todas" (click)="marcarTodas()">Marcar todas</button>
+          }
+        </div>
+        <div class="notif-panel-body">
+          @if (notifSvc.notificacionesRecientes().length === 0) {
+            <div class="notif-empty">
+              <mat-icon>notifications_none</mat-icon>
+              Sin notificaciones nuevas
+            </div>
+          }
+          @for (n of notifSvc.notificacionesRecientes(); track n.id) {
+            <div class="notif-item" [class.leida]="n.leida" (click)="abrirNotif(n)">
+              <div class="notif-item-icon">
+                <mat-icon>{{ notifSvc.iconoTipo(n.tipo_codigo) }}</mat-icon>
+              </div>
+              <div class="notif-item-content">
+                <div class="notif-item-titulo">{{ n.titulo }}</div>
+                <div class="notif-item-msg">{{ n.mensaje }}</div>
+                <div class="notif-item-tiempo">{{ notifSvc.tiempoRelativo(n.creada) }}</div>
+              </div>
+            </div>
+          }
+        </div>
+        <div class="notif-panel-footer">
+          <a [routerLink]="'/notificaciones'" (click)="cerrarPanel()">Ver todas las notificaciones →</a>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Usuario -->
+  <div class="navbar-user">
+    <mat-icon>person</mat-icon>
+    <span class="usuario-nombre">{{ authService.usuarioActual()?.username }}</span>
+    @if (authService.usuarioActual()?.rol) {
+      <span class="rol-badge">{{ authService.usuarioActual()?.rol?.nombre }}</span>
+    }
+    <button mat-icon-button matTooltip="Cerrar sesión" (click)="logout()" class="btn-logout">
+      <mat-icon>logout</mat-icon>
+    </button>
+  </div>
+</nav>

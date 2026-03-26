@@ -1,0 +1,713 @@
+<app-navbar></app-navbar>
+
+<div class="cred-layout">
+
+  <!-- ═══ NAVBAR SECUNDARIO ═══════════════════════════════════════ -->
+  <div class="cred-navbar">
+    <div class="cred-nav-left">
+      <button class="cred-nav-btn" [class.active]="vista() === 'estado_cuenta'"
+              (click)="setVista('estado_cuenta')">Estado de Cuenta</button>
+      <button class="cred-nav-btn" [class.active]="vista() === 'nuevo_cliente'"
+              (click)="setVista('nuevo_cliente')">Nuevo Cliente</button>
+      <button class="cred-nav-btn" [class.active]="vista() === 'modificar_cliente'"
+              (click)="setVista('modificar_cliente')">Modificar Cliente</button>
+      <button class="cred-nav-btn" [class.active]="vista() === 'eliminar_cliente'"
+              (click)="setVista('eliminar_cliente')">Eliminar Cliente</button>
+    </div>
+    <div class="cred-nav-right">
+      <button class="cred-nav-btn" [class.active]="vista() === 'reporte_saldos'"
+              (click)="setVista('reporte_saldos')">Reporte de Saldos</button>
+    </div>
+  </div>
+
+  <main class="cred-contenido">
+
+    <!-- ═══════════════════════════════════════════════════════════
+         ESTADO DE CUENTA
+    ═══════════════════════════════════════════════════════════ -->
+    @if (vista() === 'estado_cuenta') {
+
+      @if (subvistaEstado() === 'seleccion') {
+        <div class="selector-wrapper">
+          <h2 class="selector-titulo">Estado de Cuenta — Seleccionar Cliente</h2>
+          <input class="lb-busqueda" type="text"
+                 [value]="busquedaCliente()"
+                 (input)="busquedaCliente.set($any($event.target).value)"
+                 (keydown)="onKeydownSelector($event)"
+                 placeholder="Buscar por nombre o número..."
+                 autofocus>
+          <div class="listbox-creditos">
+            @for (c of clientesFiltrados(); track c.id) {
+              <div class="listbox-row"
+                   [class.listbox-row-sel]="clienteSeleccionado()?.id === c.id"
+                   (click)="clienteSeleccionado.set(c)">
+                <span class="lb-num">{{ c.id }}</span>
+                <span class="lb-nombre">{{ c.nombre }}</span>
+              </div>
+            }
+            @if (clientesFiltrados().length === 0) {
+              <div class="listbox-empty">No se encontraron clientes</div>
+            }
+          </div>
+          <div class="selector-actions">
+            <button mat-raised-button color="primary"
+                    [disabled]="!clienteSeleccionado()"
+                    (click)="aceptarSeleccion()">
+              <mat-icon>check</mat-icon> Aceptar
+            </button>
+          </div>
+        </div>
+      }
+
+      @if (subvistaEstado() === 'detalle') {
+        <div class="edo-header">
+          <div class="edo-titulo-block">
+            <div class="edo-label">ESTADO DE CUENTA</div>
+            <div class="edo-nombre">
+              {{ clienteActual()?.nombre }}
+              @if (clienteActual()?.precio_especial) {
+                <span class="badge-especial">precio especial</span>
+              }
+            </div>
+            <div class="edo-saldos">
+              <span class="saldo-item">
+                <span class="saldo-etiqueta">Deuda:</span>
+                <span class="saldo-valor"
+                      [class.saldo-con-deuda]="saldoMostrado() > 0"
+                      [class.saldo-cero]="saldoMostrado() === 0">
+                  $ {{ saldoMostrado() | number:'1.0-0' }}
+                </span>
+              </span>
+              <span class="saldo-sep">·</span>
+              <span class="saldo-item">
+                <span class="saldo-etiqueta">Límite:</span>
+                <span class="saldo-valor">
+                  {{ cuentaActual()
+                    ? limiteDisplay(cuentaActual()!.credito_ilimitado, cuentaActual()!.limite_credito)
+                    : limiteDisplay(clienteActual()!.credito_ilimitado, clienteActual()!.credito_maximo) }}
+                </span>
+              </span>
+              @if (cuentaActual() && !cuentaActual()!.credito_ilimitado) {
+                <span class="saldo-sep">·</span>
+                <span class="saldo-item">
+                  <span class="saldo-etiqueta">Disponible:</span>
+                  <span class="saldo-valor"
+                        [class.saldo-disponible-ok]="Number(cuentaActual()!.saldo_disponible ?? 0) > 0"
+                        [class.saldo-disponible-agotado]="Number(cuentaActual()!.saldo_disponible ?? 0) <= 0">
+                    $ {{ cuentaActual()!.saldo_disponible ?? 0 | number:'1.0-0' }}
+                  </span>
+                </span>
+              }
+            </div>
+          </div>
+          <div class="edo-acciones">
+            @if (clienteActual()?.precio_especial) {
+              <span class="badge-precio-especial">
+                <mat-icon>star</mat-icon> Precio Especial
+              </span>
+            }
+            <button mat-stroked-button (click)="imprimirEstado()">
+              <mat-icon>print</mat-icon> Imprimir Estado
+            </button>
+            <button mat-stroked-button (click)="imprimirEstadoCompleto()">
+              <mat-icon>print</mat-icon> Edo. Cuenta Completo
+            </button>
+            <button mat-raised-button color="primary"
+                    [disabled]="!cuentaActual() || saldoMostrado() <= 0"
+                    (click)="abrirAbonar()">
+              <mat-icon>payments</mat-icon> Abonar
+            </button>
+            <button mat-raised-button color="accent"
+                    [disabled]="!cuentaActual() || saldoMostrado() <= 0"
+                    (click)="dialogLiquidar = true">
+              <mat-icon>check_circle</mat-icon> Liquidar Adeudo
+            </button>
+            <button mat-stroked-button [disabled]="!cuentaActual()" (click)="abrirDetalleAbonos()">
+              <mat-icon>list_alt</mat-icon> Detalle de Abonos
+            </button>
+          </div>
+        </div>
+
+        <div class="edo-body">
+          <!-- Panel izquierdo: ventas -->
+          <div class="panel-ventas">
+            <div class="panel-ventas-header">
+              <label class="filtro-label">Mostrar ventas:</label>
+              <select class="filtro-select"
+                      [value]="filtroVentas()"
+                      (change)="cambiarFiltroVentas($any($event.target).value)">
+                <option value="no_liquidadas">No liquidadas</option>
+                <option value="liquidadas">Liquidadas</option>
+                <option value="todas">Todas</option>
+              </select>
+              <div class="sel-todos-row">
+                <mat-checkbox
+                  [checked]="todosSeleccionados()"
+                  [indeterminate]="algunoSeleccionado() && !todosSeleccionados()"
+                  (change)="toggleTodos()">
+                  Seleccionar todos
+                </mat-checkbox>
+              </div>
+            </div>
+
+            <div class="ventas-lista">
+              @if (cargandoVentas()) {
+                <div class="loading-center"><mat-spinner diameter="32"></mat-spinner></div>
+              } @else if (ventasAgrupadas().length === 0) {
+                <div class="empty-ventas">
+                  <mat-icon>receipt_long</mat-icon>
+                  <p>Sin ventas en este filtro</p>
+                </div>
+              } @else {
+                @for (grupo of ventasAgrupadas(); track grupo.mes) {
+                  <div class="grupo-mes">
+                    <div class="mes-titulo">{{ grupo.mes }}</div>
+                    @for (v of grupo.ventas; track v.id) {
+                      <div class="venta-item"
+                           [class.venta-item-selected]="ventaSeleccionada()?.id === v.id"
+                           [class.venta-item-checked]="ticketsSeleccionados().has(v.id)"
+                           (click)="ventaSeleccionada.set(v)">
+                        <mat-checkbox
+                          [checked]="ticketsSeleccionados().has(v.id)"
+                          (change)="toggleTicket(v.id, $event)"
+                          (click)="$event.stopPropagation()"
+                          class="item-checkbox">
+                        </mat-checkbox>
+                        <span class="venta-dia">{{ v.fecha | date:'dd' }} · {{ v.fecha | date:'EEE' }}</span>
+                        <span class="venta-folio">#{{ v.numero }}</span>
+                        @if (v.liquidado) {
+                          <span class="badge-liquidado">✓ Liquidado</span>
+                        }
+                        <span class="venta-total">$ {{ v.total | number:'1.0-0' }}</span>
+                      </div>
+                    }
+                  </div>
+                }
+              }
+            </div>
+
+            <!-- Barra de acciones múltiples -->
+            @if (algunoSeleccionado()) {
+              <div class="multi-accion-bar">
+                <span class="multi-count">{{ ticketsSeleccionados().size }} ticket(s)</span>
+                <button class="btn-multi-imp" [matMenuTriggerFor]="menuMultiPrint">
+                  <mat-icon>print</mat-icon> Imprimir
+                  <mat-icon>arrow_drop_down</mat-icon>
+                </button>
+                <mat-menu #menuMultiPrint="matMenu">
+                  <button mat-menu-item (click)="imprimirSeleccionados('normal')">
+                    <mat-icon>print</mat-icon> Normal
+                  </button>
+                  <button mat-menu-item (click)="imprimirSeleccionados('venta_sin_iva')">
+                    <mat-icon>calculate</mat-icon> Precio venta sin IVA (−19%)
+                  </button>
+                  @if (clienteActual()?.precio_especial) {
+                    <button mat-menu-item (click)="imprimirSeleccionados('precio_especial')">
+                      <mat-icon>star</mat-icon> Precio especial
+                    </button>
+                  }
+                </mat-menu>
+                <button class="btn-multi-desel" (click)="deseleccionarTodo()">
+                  <mat-icon>close</mat-icon>
+                </button>
+              </div>
+            }
+          </div>
+
+          <!-- Panel derecho: detalle -->
+          <div class="panel-detalle">
+            @if (!ventaSeleccionada()) {
+              <div class="empty-state-panel">
+                <mat-icon>touch_app</mat-icon>
+                <p>Selecciona una venta para ver el detalle</p>
+              </div>
+            } @else {
+              @if (clienteActual()?.precio_especial && itemsSinCostoVentaSeleccionada().length > 0) {
+                <div class="alerta-sin-costo">
+                  <mat-icon>warning</mat-icon>
+                  <span>
+                    {{ itemsSinCostoVentaSeleccionada().length }} producto(s) sin precio costo:
+                    {{ alertaSinCostoTexto() }} — Se usa precio venta como referencia temporal.
+                  </span>
+                  <button mat-stroked-button (click)="abrirDialogCostos()">
+                    Cargar precios costo
+                  </button>
+                </div>
+              }
+              <div class="detalle-header">
+                <strong>Ticket #{{ ventaSeleccionada()!.numero }}</strong>
+                <span class="detalle-fecha">{{ ventaSeleccionada()!.fecha | date:'dd/MM/yyyy' }}</span>
+                @if (ventaSeleccionada()!.liquidado) {
+                  <span class="badge-liquidado">✓ Liquidado</span>
+                }
+              </div>
+              <table class="tabla-datos tabla-detalle">
+                <thead>
+                  <tr>
+                    <th>Descripción del Producto</th>
+                    <th class="text-right">Precio Venta</th>
+                    <th class="text-right">Cantidad</th>
+                    <th class="text-right">Importe</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (item of ventaSeleccionada()!.items; track $index) {
+                    <tr [class.fila-sin-costo]="clienteActual()?.precio_especial && itemUsaFallback(item)">
+                      <td>
+                        {{ item.descripcion }}
+                        @if (clienteActual()?.precio_especial && itemUsaFallback(item)) {
+                          <span class="marker-sin-costo" title="Sin precio costo cargado"> *</span>
+                        }
+                      </td>
+                      @if (clienteActual()?.precio_especial) {
+                        <td class="numero">$ {{ precioEspecialItem(item) | number:'1.0-0' }}</td>
+                        <td class="numero">{{ item.cantidad }}</td>
+                        <td class="numero">$ {{ precioEspecialItem(item) * Number(item.cantidad) | number:'1.0-0' }}</td>
+                      } @else {
+                        <td class="numero">$ {{ item.precio_unitario | number:'1.2-2' }}</td>
+                        <td class="numero">{{ item.cantidad }}</td>
+                        <td class="numero">$ {{ item.subtotal | number:'1.2-2' }}</td>
+                      }
+                    </tr>
+                  }
+                </tbody>
+                <tfoot>
+                  <tr class="tfoot-total">
+                    <td colspan="3" class="text-right"><strong>Total:</strong></td>
+                    @if (clienteActual()?.precio_especial) {
+                      <td class="numero"><strong>$ {{ totalEspecialVenta(ventaSeleccionada()!) | number:'1.0-0' }}</strong></td>
+                    } @else {
+                      <td class="numero"><strong>$ {{ ventaSeleccionada()!.total | number:'1.2-2' }}</strong></td>
+                    }
+                  </tr>
+                </tfoot>
+              </table>
+              @if (clienteActual()?.precio_especial && itemsSinCostoVentaSeleccionada().length > 0) {
+                <p class="nota-precio-especial">* Precio venta usado como referencia (sin costo cargado)</p>
+              }
+              <div class="detalle-acciones">
+                <button mat-stroked-button color="warn" disabled>
+                  <mat-icon>delete</mat-icon> Eliminar
+                </button>
+                <button mat-stroked-button [matMenuTriggerFor]="menuImpTicket">
+                  <mat-icon>print</mat-icon> Imprimir
+                  <mat-icon>arrow_drop_down</mat-icon>
+                </button>
+                <mat-menu #menuImpTicket="matMenu">
+                  <button mat-menu-item (click)="imprimirTicketIndividual(ventaSeleccionada()!, 'normal')">
+                    <mat-icon>print</mat-icon> Normal
+                  </button>
+                  <button mat-menu-item (click)="imprimirTicketIndividual(ventaSeleccionada()!, 'venta_sin_iva')">
+                    <mat-icon>calculate</mat-icon> Precio venta sin IVA (−19%)
+                  </button>
+                  @if (clienteActual()?.precio_especial) {
+                    <button mat-menu-item (click)="imprimirTicketIndividual(ventaSeleccionada()!, 'precio_especial')">
+                      <mat-icon>star</mat-icon> Precio especial
+                    </button>
+                  }
+                </mat-menu>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="volver-link">
+          <button mat-button (click)="subvistaEstado.set('seleccion')">
+            <mat-icon>arrow_back</mat-icon> Cambiar cliente
+          </button>
+        </div>
+      }
+    }
+
+    <!-- ═══════════════════════════════════════════════════════════
+         NUEVO CLIENTE
+    ═══════════════════════════════════════════════════════════ -->
+    @if (vista() === 'nuevo_cliente') {
+      <div class="vista-header">
+        <h2>Nuevo Cliente de Crédito</h2>
+        <p class="subtitulo">Registra un nuevo cliente para ventas a crédito</p>
+      </div>
+      <div class="form-card">
+        <mat-form-field appearance="outline" class="form-field-full">
+          <mat-label>Nombre Completo *</mat-label>
+          <input matInput [(ngModel)]="formCliente.nombre" placeholder="Nombre del cliente">
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="form-field-full">
+          <mat-label>Dirección</mat-label>
+          <input matInput [(ngModel)]="formCliente.direccion">
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="form-field-full">
+          <mat-label>Teléfono(s)</mat-label>
+          <input matInput [(ngModel)]="formCliente.telefono">
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="form-field-half">
+          <mat-label>Límite de Crédito</mat-label>
+          <span matPrefix>$&nbsp;</span>
+          <input matInput type="number" min="0" step="0.01" [(ngModel)]="formCliente.limiteCredito">
+          <mat-hint>Si es cero, no tiene límite de crédito</mat-hint>
+        </mat-form-field>
+        <div class="form-actions">
+          <button mat-raised-button color="primary"
+                  [disabled]="cargando() || !formCliente.nombre.trim()"
+                  (click)="guardarNuevoCliente()">
+            <mat-icon>check</mat-icon> {{ cargando() ? 'Guardando...' : 'Guardar Cliente' }}
+          </button>
+          <button mat-stroked-button (click)="setVista('estado_cuenta')">
+            <mat-icon>close</mat-icon> Cancelar
+          </button>
+        </div>
+      </div>
+    }
+
+    <!-- ═══════════════════════════════════════════════════════════
+         MODIFICAR CLIENTE
+    ═══════════════════════════════════════════════════════════ -->
+    @if (vista() === 'modificar_cliente') {
+      @if (subvistaModificar() === 'seleccion') {
+        <div class="selector-wrapper">
+          <h2 class="selector-titulo">Modificar Cliente — Seleccionar</h2>
+          <input class="lb-busqueda" type="text"
+                 [value]="busquedaCliente()"
+                 (input)="busquedaCliente.set($any($event.target).value)"
+                 (keydown)="onKeydownSelector($event)"
+                 placeholder="Buscar por nombre o número..."
+                 autofocus>
+          <div class="listbox-creditos">
+            @for (c of clientesFiltrados(); track c.id) {
+              <div class="listbox-row"
+                   [class.listbox-row-sel]="clienteSeleccionado()?.id === c.id"
+                   (click)="clienteSeleccionado.set(c)">
+                <span class="lb-num">{{ c.id }}</span>
+                <span class="lb-nombre">{{ c.nombre }}</span>
+              </div>
+            }
+          </div>
+          <div class="selector-actions">
+            <button mat-raised-button color="primary"
+                    [disabled]="!clienteSeleccionado()"
+                    (click)="aceptarSeleccion()">
+              <mat-icon>check</mat-icon> Aceptar
+            </button>
+          </div>
+        </div>
+      }
+
+      @if (subvistaModificar() === 'formulario') {
+        <div class="vista-header">
+          <h2>Modificar Cliente</h2>
+          <p class="subtitulo">Editando: <strong>{{ clienteActual()?.nombre }}</strong></p>
+        </div>
+        <div class="form-card">
+          <mat-form-field appearance="outline" class="form-field-full">
+            <mat-label>Nombre Completo *</mat-label>
+            <input matInput [(ngModel)]="formCliente.nombre">
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="form-field-full">
+            <mat-label>Dirección</mat-label>
+            <input matInput [(ngModel)]="formCliente.direccion">
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="form-field-full">
+            <mat-label>Teléfono(s)</mat-label>
+            <input matInput [(ngModel)]="formCliente.telefono">
+          </mat-form-field>
+          <mat-form-field appearance="outline" class="form-field-half">
+            <mat-label>Límite de Crédito</mat-label>
+            <span matPrefix>$&nbsp;</span>
+            <input matInput type="number" min="0" step="0.01" [(ngModel)]="formCliente.limiteCredito">
+            <mat-hint>Si es cero, no tiene límite de crédito</mat-hint>
+          </mat-form-field>
+          <div class="form-actions">
+            <button mat-raised-button color="primary"
+                    [disabled]="cargando() || !formCliente.nombre.trim()"
+                    (click)="guardarCambiosCliente()">
+              <mat-icon>check</mat-icon> {{ cargando() ? 'Guardando...' : 'Guardar Cambios' }}
+            </button>
+            <button mat-stroked-button (click)="subvistaModificar.set('seleccion')">
+              <mat-icon>arrow_back</mat-icon> Volver
+            </button>
+          </div>
+        </div>
+      }
+    }
+
+    <!-- ═══════════════════════════════════════════════════════════
+         ELIMINAR CLIENTE
+    ═══════════════════════════════════════════════════════════ -->
+    @if (vista() === 'eliminar_cliente') {
+      @if (subvistaEliminar() === 'seleccion') {
+        <div class="selector-wrapper">
+          <h2 class="selector-titulo">Eliminar Cliente — Seleccionar</h2>
+          <input class="lb-busqueda" type="text"
+                 [value]="busquedaCliente()"
+                 (input)="busquedaCliente.set($any($event.target).value)"
+                 (keydown)="onKeydownSelector($event)"
+                 placeholder="Buscar por nombre o número..."
+                 autofocus>
+          <div class="listbox-creditos">
+            @for (c of clientesFiltrados(); track c.id) {
+              <div class="listbox-row"
+                   [class.listbox-row-sel]="clienteSeleccionado()?.id === c.id"
+                   (click)="clienteSeleccionado.set(c)">
+                <span class="lb-num">{{ c.id }}</span>
+                <span class="lb-nombre">{{ c.nombre }}</span>
+              </div>
+            }
+          </div>
+          <div class="selector-actions">
+            <button mat-raised-button color="warn"
+                    [disabled]="!clienteSeleccionado()"
+                    (click)="aceptarSeleccion()">
+              <mat-icon>check</mat-icon> Seleccionar
+            </button>
+          </div>
+        </div>
+      }
+
+      @if (subvistaEliminar() === 'confirmar') {
+        <div class="vista-header"><h2>Eliminar Cliente</h2></div>
+        <div class="confirmar-card">
+          <div class="confirmar-info">
+            <div class="info-fila">
+              <span class="info-label">Nombre</span>
+              <span class="info-valor">{{ clienteActual()?.nombre }}</span>
+            </div>
+            <div class="info-fila">
+              <span class="info-label">Dirección</span>
+              <span class="info-valor">{{ clienteActual()?.direccion || '—' }}</span>
+            </div>
+            <div class="info-fila">
+              <span class="info-label">Teléfono</span>
+              <span class="info-valor">{{ clienteActual()?.telefono || '—' }}</span>
+            </div>
+            <div class="info-fila">
+              <span class="info-label">Saldo actual</span>
+              <span class="info-valor" [class.saldo-con-deuda]="Number(clienteActual()?.saldo_usado ?? 0) > 0">
+                $ {{ clienteActual()?.saldo_usado ?? 0 | number:'1.0-0' }}
+              </span>
+            </div>
+          </div>
+          @if (Number(clienteActual()?.saldo_usado ?? 0) > 0) {
+            <div class="advertencia-roja">
+              <mat-icon>warning</mat-icon>
+              Este cliente tiene un saldo pendiente de $ {{ clienteActual()!.saldo_usado | number:'1.0-0' }}.
+              ¿Está seguro que desea eliminarlo?
+            </div>
+          } @else {
+            <p class="confirmar-texto">
+              ¿Está seguro que desea eliminar a <strong>{{ clienteActual()?.nombre }}</strong>?
+            </p>
+          }
+          <div class="form-actions">
+            <button mat-stroked-button (click)="subvistaEliminar.set('seleccion')">
+              <mat-icon>close</mat-icon> Cancelar
+            </button>
+            <button mat-raised-button color="warn" [disabled]="cargando()" (click)="eliminarCliente()">
+              <mat-icon>delete</mat-icon> {{ cargando() ? 'Eliminando...' : 'Confirmar Eliminación' }}
+            </button>
+          </div>
+        </div>
+      }
+    }
+
+    <!-- ═══════════════════════════════════════════════════════════
+         REPORTE DE SALDOS
+    ═══════════════════════════════════════════════════════════ -->
+    @if (vista() === 'reporte_saldos') {
+      <div class="reporte-saldos-header">
+        <div>
+          <div class="reporte-titulo">REPORTE DE SALDOS</div>
+          <div class="reporte-total-label">Total de Créditos Pendientes</div>
+          <div class="reporte-total-valor">$ {{ totalSaldosPendientes() | number:'1.0-0' }}</div>
+        </div>
+        <button mat-raised-button color="primary" (click)="imprimirReporte()">
+          <mat-icon>print</mat-icon> Imprimir Reporte
+        </button>
+      </div>
+
+      <div class="saldos-filtro-bar">
+        <input class="lb-busqueda" type="text"
+               [value]="busquedaSaldos()"
+               (input)="busquedaSaldos.set($any($event.target).value)"
+               placeholder="Filtrar por nombre, dirección, teléfono...">
+        <span class="saldos-conteo">{{ cuentasFiltradas().length }} de {{ cuentas().length }} cliente(s)</span>
+      </div>
+
+      @if (cargando()) {
+        <div class="loading-center"><mat-spinner diameter="40"></mat-spinner></div>
+      } @else {
+        <table class="tabla-datos tabla-reporte-saldos">
+          <thead>
+            <tr>
+              <th style="width:60px">N°</th>
+              <th class="sortable" (click)="ordenarSaldos('cliente_nombre')">Nombre / Dirección del Cliente<span class="sort-icon" [class.activo]="isActive(ordenSaldos(),'cliente_nombre')">{{ sortIcon(ordenSaldos(),'cliente_nombre') }}</span></th>
+              <th>Teléfono</th>
+              <th class="text-right">Límite de Crédito</th>
+              <th class="text-right sortable" (click)="ordenarSaldos('saldo_usado')">Saldo Actual<span class="sort-icon" [class.activo]="isActive(ordenSaldos(),'saldo_usado')">{{ sortIcon(ordenSaldos(),'saldo_usado') }}</span></th>
+              <th class="sortable" (click)="ordenarSaldos('ultimo_pago')">Último Pago<span class="sort-icon" [class.activo]="isActive(ordenSaldos(),'ultimo_pago')">{{ sortIcon(ordenSaldos(),'ultimo_pago') }}</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (c of cuentasFiltradas(); track c.id) {
+              <tr (click)="irAEstadoCuenta(c)"
+                  [class.fila-seleccionada]="cuentaReporteSeleccionada()?.id === c.id"
+                  class="fila-clickable">
+                <td>{{ c.cliente_id }}</td>
+                <td>
+                  <div class="cliente-nombre-tabla">{{ c.cliente_nombre }}</div>
+                  @if (c.cliente_direccion) {
+                    <div class="cliente-dir-tabla">{{ c.cliente_direccion }}</div>
+                  }
+                </td>
+                <td>{{ c.cliente_telefono || '—' }}</td>
+                <td class="numero">{{ limiteDisplay(c.credito_ilimitado, c.limite_credito) }}</td>
+                <td class="numero">
+                  <span [class.saldo-con-deuda]="Number(c.saldo_usado) > 0"
+                        [class.saldo-cero]="Number(c.saldo_usado) === 0">
+                    $ {{ c.saldo_usado | number:'1.0-0' }}
+                  </span>
+                </td>
+                <td class="fecha-cell">{{ c.ultimo_pago ? (c.ultimo_pago | date:'dd/MM/yyyy') : '—' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+        @if (cuentasFiltradas().length === 0) {
+          <p class="sin-datos">{{ cuentas().length === 0 ? 'No hay cuentas de crédito registradas' : 'No se encontraron resultados' }}</p>
+        }
+      }
+    }
+
+  </main>
+</div>
+
+<!-- ═══ DIALOG: ABONAR ═══════════════════════════════════════ -->
+@if (dialogAbonar) {
+  <div class="dialog-backdrop" (click)="dialogAbonar = false">
+    <div class="dialog-box" (click)="$event.stopPropagation()">
+      <div class="dialog-titulo">Abonar a cuenta de {{ clienteActual()?.nombre }}</div>
+      <div class="dialog-info-row">
+        <span>Saldo actual:</span>
+        <strong class="saldo-con-deuda">
+          $ {{ saldoMostrado() | number:'1.0-0' }}
+        </strong>
+      </div>
+      <mat-form-field appearance="outline" class="dialog-field">
+        <mat-label>Monto del abono:</mat-label>
+        <span matPrefix>$&nbsp;</span>
+        <input matInput type="number" min="0.01" step="0.01"
+               [(ngModel)]="montoAbono"
+               (focus)="focusAll($any($event.target))"
+               placeholder="0.00">
+      </mat-form-field>
+      @if (nuevoSaldo() !== null) {
+        <div class="dialog-info-row nuevo-saldo-row">
+          <span>Nuevo saldo:</span>
+          <strong [class.saldo-con-deuda]="nuevoSaldo()! > 0" [class.saldo-cero]="nuevoSaldo()! === 0">
+            $ {{ nuevoSaldo()! | number:'1.0-0' }}
+          </strong>
+        </div>
+      }
+      <div class="dialog-actions">
+        <button mat-stroked-button (click)="dialogAbonar = false">Cancelar</button>
+        <button mat-raised-button color="primary"
+                [disabled]="cargandoDialog || !montoAbono || montoAbono <= 0"
+                (click)="registrarAbono()">
+          <mat-icon>check</mat-icon> {{ cargandoDialog ? 'Registrando...' : 'Registrar Abono' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ═══ DIALOG: LIQUIDAR ═════════════════════════════════════ -->
+@if (dialogLiquidar) {
+  <div class="dialog-backdrop" (click)="dialogLiquidar = false">
+    <div class="dialog-box" (click)="$event.stopPropagation()">
+      <div class="dialog-titulo">Liquidar Adeudo</div>
+      <p class="dialog-pregunta">
+        ¿Liquidar el saldo completo de
+        <strong class="saldo-con-deuda">
+          $ {{ saldoMostrado() | number:'1.0-0' }}
+        </strong>
+        de <strong>{{ clienteActual()?.nombre }}</strong>?
+      </p>
+      <div class="dialog-actions">
+        <button mat-stroked-button (click)="dialogLiquidar = false">Cancelar</button>
+        <button mat-raised-button color="accent" [disabled]="cargandoDialog" (click)="liquidarAdeudo()">
+          <mat-icon>check_circle</mat-icon> {{ cargandoDialog ? 'Procesando...' : 'Liquidar Todo' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ═══ DIALOG: CARGAR PRECIOS COSTO ═══════════════════════ -->
+@if (dialogCostos) {
+  <div class="dialog-backdrop" (click)="dialogCostos = false">
+    <div class="dialog-box dialog-box-wide" (click)="$event.stopPropagation()">
+      <div class="dialog-titulo">Cargar precio costo</div>
+      <table class="tabla-datos">
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th class="text-right">P. Venta ref.</th>
+            <th class="text-right" style="width:130px">P. Costo</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (p of productosSinCostoLista(); track p.id) {
+            <tr>
+              <td>{{ p.nombre }}</td>
+              <td class="numero">$ {{ p.precio_venta_ref | number:'1.0-0' }}</td>
+              <td>
+                <input type="number" min="0" step="1"
+                       class="input-costo"
+                       [(ngModel)]="costosNuevos[p.id]"
+                       placeholder="0">
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+      <div class="dialog-actions">
+        <button mat-stroked-button (click)="dialogCostos = false">Cancelar</button>
+        <button mat-raised-button color="primary"
+                [disabled]="guardandoCostos"
+                (click)="guardarPrecios()">
+          <mat-icon>save</mat-icon> {{ guardandoCostos ? 'Guardando...' : 'Guardar precios' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ═══ DIALOG: DETALLE DE ABONOS ════════════════════════════ -->
+@if (dialogAbonos) {
+  <div class="dialog-backdrop" (click)="dialogAbonos = false">
+    <div class="dialog-box dialog-box-wide" (click)="$event.stopPropagation()">
+      <div class="dialog-titulo">Detalle de Abonos — {{ clienteActual()?.nombre }}</div>
+      @if (abonosHistorial().length === 0) {
+        <p class="sin-datos">Cargando abonos...</p>
+      } @else {
+        <table class="tabla-datos">
+          <thead>
+            <tr><th>Fecha</th><th class="text-right">Monto</th><th>Usuario</th><th>Notas</th></tr>
+          </thead>
+          <tbody>
+            @for (a of abonosHistorial(); track a.id) {
+              <tr>
+                <td class="fecha">{{ a.fecha | date:'dd/MM/yyyy HH:mm' }}</td>
+                <td class="numero saldo-con-deuda">$ {{ a.monto | number:'1.0-0' }}</td>
+                <td>{{ a.usuario_nombre || '—' }}</td>
+                <td>{{ a.notas || '—' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+      <div class="dialog-actions">
+        <button mat-raised-button (click)="dialogAbonos = false">Cerrar</button>
+      </div>
+    </div>
+  </div>
+}

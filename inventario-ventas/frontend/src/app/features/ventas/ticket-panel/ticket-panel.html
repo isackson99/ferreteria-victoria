@@ -1,0 +1,339 @@
+<div class="ticket-panel">
+
+  <!-- Tabla de items -->
+  <div class="tabla-container">
+    @if (items().length === 0) {
+      <div class="empty-state">
+        <mat-icon>point_of_sale</mat-icon>
+        <p>Escanea un código de barras o usa F10 para buscar un producto</p>
+      </div>
+    } @else {
+      <table class="items-table">
+        <thead>
+          <tr>
+            <th class="col-codigo">Código de Barras</th>
+            <th class="col-desc">Descripción del Producto</th>
+            <th class="col-precio">Precio Venta</th>
+            <th class="col-cant">Cant.</th>
+            <th class="col-importe">Importe</th>
+            <th class="col-stock">Existencia</th>
+            <th class="col-desc2">Descuento</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of items(); track item.id; let odd = $odd) {
+            <tr
+              [class.row-par]="!odd"
+              [class.row-impar]="odd"
+              [class.row-seleccionado]="itemSeleccionadoId() === item.id"
+              (click)="seleccionarItem(item.id)">
+
+              <!-- Código -->
+              <td class="col-codigo td-codigo">
+                {{ productoCache.get(item.producto ?? 0)?.codigo || item.producto_codigo || '-' }}
+              </td>
+
+              <!-- Descripción -->
+              <td class="col-desc td-desc">
+                <div class="desc-cell">
+                  <span class="desc-nombre">{{ item.producto_nombre }}</span>
+                  <div class="desc-badges">
+                    @if (item.precio_tipo === 'mayoreo') {
+                      <span class="badge-mayoreo">Mayoreo</span>
+                    }
+                    @if (item.es_producto_comun) {
+                      <span class="badge-comun">Artículo común</span>
+                    }
+                    @if (puedeAplicarMayoreo(item)) {
+                      <button class="btn-aplicar-mayoreo" (click)="aplicarMayoreo(item, true, $event)" [disabled]="cargando()">
+                        ↓ Mayoreo {{ precioMayoreoItem(item) | currency:'CLP':'$':'1.0-0' }}
+                      </button>
+                    }
+                    @if (puedeRevertirMayoreo(item)) {
+                      <button class="btn-revertir-mayoreo" (click)="aplicarMayoreo(item, false, $event)" [disabled]="cargando()">
+                        ✓ Mayoreo activo — revertir
+                      </button>
+                    }
+                  </div>
+                </div>
+              </td>
+
+              <!-- Precio -->
+              <td class="col-precio td-num">
+                {{ item.precio_unitario | currency:'CLP':'$':'1.0-0' }}
+              </td>
+
+              <!-- Cantidad con +/- -->
+              <td class="col-cant td-cant" (click)="$event.stopPropagation()">
+                @if (itemConfirmandoEliminacion() === item.id) {
+                  <div class="confirm-delete">
+                    <span class="confirm-msg">¿Eliminar?</span>
+                    <button class="btn-confirm-si" (click)="confirmarEliminacion(item.id, $event)" [disabled]="cargando()">Sí</button>
+                    <button class="btn-confirm-no" (click)="cancelarConfirmacionEliminacion($event)">No</button>
+                  </div>
+                } @else {
+                  <div class="qty-controls">
+                    <button class="qty-btn qty-dec" (click)="decrementar(item, $event)" [disabled]="cargando()">−</button>
+                    <span class="qty-value">{{ item.cantidad }}</span>
+                    <button class="qty-btn qty-inc" (click)="incrementar(item, $event)" [disabled]="cargando() || stockMaxAlcanzado(item)"
+                            [title]="stockMaxAlcanzado(item) ? 'Stock máximo alcanzado' : ''">+</button>
+                  </div>
+                }
+              </td>
+
+              <!-- Importe -->
+              <td class="col-importe td-num td-importe">
+                {{ item.subtotal | currency:'CLP':'$':'1.0-0' }}
+              </td>
+
+              <!-- Existencia -->
+              <td class="col-stock"
+                  [class.sin-stock]="getStock(item) === 0"
+                  [class.con-stock]="getStock(item) !== null && getStock(item)! > 0">
+                {{ getStock(item) !== null ? getStock(item) : '-' }}
+              </td>
+
+              <!-- Descuento -->
+              <td class="col-desc2 td-num">
+                {{ item.descuento ?? 0 }}%
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+
+  <!-- Footer del ticket -->
+  <div class="ticket-footer">
+
+    @if (ticket?.cliente_factura_nombre) {
+      <div class="cliente-factura-asignado">
+        <mat-icon>receipt_long</mat-icon>
+        <span>{{ ticket!.cliente_factura_nombre }}</span>
+        <span class="cf-rut">{{ ticket!.cliente_factura_rut }}</span>
+        <button class="cf-quitar" (click)="quitarClienteFactura()" matTooltip="Quitar cliente">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+    }
+
+    <div class="footer-main">
+      <div class="footer-totales">
+        <div class="total-item">
+          <span class="total-label">Total:</span>
+          <span class="total-valor total-monto">{{ total() | currency:'CLP':'$':'1.0-0' }}</span>
+        </div>
+        <div class="total-sep"></div>
+        <div class="total-item">
+          <span class="total-label">Pagó Con:</span>
+          <span class="total-valor">{{ montoRecibido() | currency:'CLP':'$':'1.0-0' }}</span>
+        </div>
+        <div class="total-sep"></div>
+        <div class="total-item">
+          <span class="total-label">Cambio:</span>
+          <span class="total-valor cambio-valor" [class.cambio-positivo]="vuelto > 0">
+            {{ vuelto | currency:'CLP':'$':'1.0-0' }}
+          </span>
+        </div>
+      </div>
+
+    <div class="footer-acciones">
+      <button class="btn-cobrar" (click)="abrirCobro()" [disabled]="items().length === 0 || cargando()">
+        <mat-icon>payment</mat-icon>
+        F12 - Cobrar
+      </button>
+      <button class="btn-accion-sec" (click)="reimprimir()">
+        <mat-icon>print</mat-icon>
+        Reimprimir Último Ticket
+      </button>
+      <button class="btn-accion-sec" (click)="ventasDia()">
+        <mat-icon>today</mat-icon>
+        Ventas del día y Devoluciones
+      </button>
+    </div><!-- footer-acciones -->
+    </div><!-- footer-main -->
+  </div><!-- ticket-footer -->
+
+  <!-- ===== MODAL: Reimprimir (cliente factura) ===== -->
+  @if (dialogReimprimir()) {
+    <div class="modal-backdrop" (click)="cerrarDialogReimprimir()">
+      <div class="modal-box modal-box-sm" (click)="$event.stopPropagation()">
+
+        <div class="modal-header">
+          <mat-icon>print</mat-icon>
+          <h3>Reimprimir Ticket</h3>
+          <button class="modal-close" (click)="cerrarDialogReimprimir()">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <p class="reimpr-msg">Este ticket tiene cliente factura asignado. ¿Qué desea reimprimir?</p>
+          <div class="reimpr-opciones">
+            <button class="btn-reimpr-opcion" (click)="reimprCopiaCliente()">
+              <mat-icon>person</mat-icon>
+              Copia Cliente
+            </button>
+            <button class="btn-reimpr-opcion" (click)="reimprCopiaComercio()">
+              <mat-icon>store</mat-icon>
+              Copia Comercio
+            </button>
+            <button class="btn-reimpr-opcion btn-reimpr-ambas" (click)="reimprAmbasCopias()">
+              <mat-icon>content_copy</mat-icon>
+              Ambas copias
+            </button>
+            <button class="btn-reimpr-cancelar" (click)="cerrarDialogReimprimir()">
+              Cancelar
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  }
+
+  <!-- ===== MODAL: Cobro ===== -->
+  @if (mostrarCobro()) {
+    <div class="modal-backdrop" (click)="cerrarCobro()">
+      <div class="modal-box" (click)="$event.stopPropagation()">
+
+        <div class="modal-header">
+          <mat-icon>payment</mat-icon>
+          <h3>F12 - Cobrar</h3>
+          <button class="modal-close" (click)="cerrarCobro()">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <!-- Total -->
+          <div class="cobro-total">
+            <span class="cobro-total-label">Total a Cobrar</span>
+            <span class="cobro-total-monto">{{ total() | currency:'CLP':'$':'1.0-0' }}</span>
+          </div>
+
+          <!-- Método de pago -->
+          <div class="cobro-metodos">
+            <button class="metodo-btn" [class.activo]="metodoPago() === 'efectivo'" (click)="onMetodoCambiado('efectivo')">
+              <mat-icon>payments</mat-icon> Efectivo
+            </button>
+            <button class="metodo-btn" [class.activo]="metodoPago() === 'tarjeta'" (click)="onMetodoCambiado('tarjeta')">
+              <mat-icon>credit_card</mat-icon> Tarjeta
+            </button>
+            <button class="metodo-btn" [class.activo]="metodoPago() === 'mixto'" (click)="onMetodoCambiado('mixto')">
+              <mat-icon>compare_arrows</mat-icon> Mixto
+            </button>
+            <button class="metodo-btn" [class.activo]="metodoPago() === 'credito'" (click)="onMetodoCambiado('credito')">
+              <mat-icon>account_balance</mat-icon> Crédito
+            </button>
+          </div>
+
+          <!-- Inputs según método -->
+          @if (metodoPago() === 'efectivo' || metodoPago() === 'mixto') {
+            <div class="cobro-field">
+              <label>Pagó con ($)</label>
+              <input
+                class="cobro-input"
+                type="number"
+                [ngModel]="montoRecibido()"
+                (ngModelChange)="montoRecibido.set(+$event)"
+                (focus)="$event.target.select()"
+                placeholder="0"
+                min="0">
+            </div>
+          }
+
+          @if (metodoPago() === 'tarjeta') {
+            <div class="cobro-field">
+              <label>Monto tarjeta ($)</label>
+              <span class="cobro-input cobro-input-readonly">{{ total() | currency:'CLP':'$':'1.0-0' }}</span>
+            </div>
+          }
+
+          @if (metodoPago() === 'mixto') {
+            <div class="cobro-field">
+              <label>Monto tarjeta ($)</label>
+              <input
+                class="cobro-input"
+                type="number"
+                [ngModel]="montoTarjeta()"
+                (ngModelChange)="montoTarjeta.set(+$event)"
+                (focus)="$event.target.select()"
+                placeholder="0"
+                min="0">
+            </div>
+          }
+
+          @if (vuelto > 0) {
+            <div class="cobro-cambio">
+              <mat-icon>change_circle</mat-icon>
+              <span>Cambio:</span>
+              <strong>{{ vuelto | currency:'CLP':'$':'1.0-0' }}</strong>
+            </div>
+          }
+
+          <!-- Selector de cliente para pago a crédito -->
+          @if (metodoPago() === 'credito') {
+            <div class="credito-selector">
+              @if (cargandoClientes()) {
+                <div class="credito-cargando">Cargando clientes...</div>
+              } @else {
+                <input class="credito-busqueda" type="text"
+                       [value]="busquedaCredito()"
+                       (input)="busquedaCredito.set($any($event.target).value)"
+                       (keydown)="onKeydownCredito($event)"
+                       placeholder="Buscar cliente de crédito..."
+                       autofocus>
+                <div class="credito-listbox">
+                  @for (c of clientesCreditoFiltrados(); track c.id) {
+                    <div class="credito-row"
+                         [class.credito-row-sel]="clienteCreditoSel()?.id === c.id"
+                         (click)="clienteCreditoSel.set(c)">
+                      <span class="cr-id">{{ c.id }}</span>
+                      <span class="cr-nombre">{{ c.nombre }}</span>
+                      <span class="cr-saldo">
+                        @if (c.credito_ilimitado) { Sin límite }
+                        @else { Disp: ${{ c.saldo_disponible ?? 0 | number:'1.0-0' }} }
+                      </span>
+                    </div>
+                  }
+                  @if (clientesCreditoFiltrados().length === 0) {
+                    <div class="credito-empty">No se encontraron clientes</div>
+                  }
+                </div>
+                @if (clienteCreditoSel()) {
+                  <div class="credito-sel-info">
+                    <mat-icon>check_circle</mat-icon>
+                    Cliente: <strong>{{ clienteCreditoSel()!.nombre }}</strong>
+                  </div>
+                }
+              }
+            </div>
+          }
+        </div>
+
+        <div class="modal-footer">
+          <div class="footer-fila-sec">
+            <button class="btn-cancelar-venta" (click)="cancelarVenta()">
+              <mat-icon>cancel</mat-icon> Cancelar Venta
+            </button>
+            <button class="btn-cerrar-cobro" (click)="cerrarCobro()">Volver</button>
+          </div>
+          <div class="footer-fila-ppal">
+            <button class="btn-cobrar-imprimir" (click)="confirmarPago(true)" [disabled]="cargando()">
+              <mat-icon>print</mat-icon>
+              @if (cargando()) { Procesando... } @else { Cobrar e Imprimir }
+            </button>
+            <button class="btn-confirmar" (click)="confirmarPago(false)" [disabled]="cargando()">
+              <mat-icon>check_circle</mat-icon>
+              @if (cargando()) { Procesando... } @else { Sin Imprimir }
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  }
+
+</div>

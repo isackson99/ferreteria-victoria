@@ -1,0 +1,97 @@
+<div class="buscador-panel">
+
+  <!-- Input de búsqueda -->
+  <div class="search-input-row">
+    <mat-icon class="search-icon">search</mat-icon>
+    <input
+      #searchInput
+      class="search-input"
+      type="text"
+      [ngModel]="query()"
+      (ngModelChange)="onSearch($event)"
+      (keydown)="onKeyDown($event)"
+      (focus)="mostrarHint.set(true)"
+      (blur)="mostrarHint.set(false)"
+      placeholder="Buscar por nombre, código o categoría..."
+      autocomplete="off">
+    @if (cargando()) {
+      <span class="buscando-txt">Buscando...</span>
+    }
+    @if (mostrarHint()) {
+      <span class="hint-comodin">% = buscar en cualquier parte</span>
+    }
+    @if (usarMayoreoExterno) {
+      <span class="mayoreo-indicator">
+        <mat-icon>local_offer</mat-icon> MAYOREO
+      </span>
+    }
+  </div>
+
+  <!-- Tabla de resultados -->
+  <div class="resultados-container">
+    @if (resultados().length > 0) {
+      <table class="resultados-table">
+        <thead>
+          <tr>
+            <th>Descripción</th>
+            <th>Precio Venta</th>
+            <th>Categoría</th>
+            <th>Inventario</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (producto of resultados(); track producto.id; let i = $index) {
+            <tr
+              [class.fila-seleccionada]="filaSeleccionada() === i"
+              (click)="agregarProducto(producto)"
+              (dblclick)="agregarProducto(producto)">
+              <td class="td-nombre">
+                <div class="nombre-cell">
+                  <span class="nombre">{{ producto.nombre }}</span>
+                  <span class="codigo">{{ producto.codigo }}</span>
+                </div>
+              </td>
+              <td class="td-precio">
+                <div class="precio-cell">
+                  <span class="precio-venta">{{ producto.precio_venta | currency:'CLP':'$':'1.0-0' }}</span>
+                  @if (producto.precio_mayoreo > 0) {
+                    <span class="precio-mayoreo">May: {{ producto.precio_mayoreo | currency:'CLP':'$':'1.0-0' }} (x{{ producto.minimo_mayoreo }}+)</span>
+                  }
+                </div>
+              </td>
+              <td class="td-cat">{{ producto.categoria_nombre || '-' }}</td>
+              <td class="td-stock">
+                <span class="stock-badge"
+                      [class.stock-cero]="producto.inventario_actual === 0"
+                      [class.stock-ok]="producto.inventario_actual > 0">
+                  {{ producto.inventario_actual }}
+                </span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    } @else if (query().length > 0 && !cargando()) {
+      <div class="sin-resultados">
+        <mat-icon>search_off</mat-icon>
+        <p>Sin resultados para <strong>"{{ query() }}"</strong></p>
+      </div>
+    } @else if (query().length === 0) {
+      <div class="sin-resultados">
+        <mat-icon>keyboard</mat-icon>
+        <p>Escribe para buscar productos</p>
+      </div>
+    }
+  </div>
+
+  <!-- Hint inferior -->
+  <div class="search-hint">
+    <span><kbd>↑↓</kbd> navegar</span>
+    <span><kbd>Enter</kbd> agregar</span>
+    <span><kbd>Click</kbd> agregar</span>
+    @if (resultados().length > 0) {
+      <span class="resultados-count">{{ resultados().length }} resultado(s)</span>
+    }
+  </div>
+
+</div>

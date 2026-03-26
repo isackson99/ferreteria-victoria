@@ -1,0 +1,234 @@
+<app-navbar></app-navbar>
+
+<div class="corte-page">
+  <!-- Header -->
+  <div class="corte-header">
+    <mat-icon>calculate</mat-icon>
+    <h1>Corte de Caja</h1>
+    <span class="corte-usuario">{{ authService.usuarioActual()?.username }}</span>
+  </div>
+
+  <!-- Tabs -->
+  <div class="corte-tabs">
+    <button class="tab-btn" [class.activo]="tab() === 'hacer'" (click)="tab.set('hacer')">
+      <mat-icon>point_of_sale</mat-icon> Hacer Corte
+    </button>
+    <button class="tab-btn" [class.activo]="tab() === 'historial'" (click)="switchTab('historial')">
+      <mat-icon>history</mat-icon> Historial de Cortes
+    </button>
+  </div>
+
+  <!-- TAB: Hacer corte -->
+  @if (tab() === 'hacer') {
+    @if (cargando()) {
+      <div class="cargando-container"><mat-icon class="spin">sync</mat-icon> Calculando turno...</div>
+    } @else if (resumen()) {
+      <div class="corte-body">
+        <!-- Columna izquierda -->
+        <div class="col-izquierda">
+          <!-- Caja panel -->
+          <div class="panel panel-caja">
+            <div class="panel-title"><mat-icon>account_balance_wallet</mat-icon> Caja</div>
+            <div class="panel-rows">
+              <div class="panel-row">
+                <span>Ventas en Efectivo</span>
+                <span class="pos">{{ formatCLP(resumen()!.total_efectivo) }}</span>
+              </div>
+              <div class="panel-row">
+                <span>Abonos en Efectivo</span>
+                <span class="pos">{{ formatCLP(resumen()!.total_abonos_credito) }}</span>
+              </div>
+              <div class="panel-row">
+                <span>Entradas</span>
+                <span class="pos">{{ formatCLP(resumen()!.total_entradas) }}</span>
+              </div>
+              <div class="panel-row">
+                <span>Salidas</span>
+                <span class="neg">−{{ formatCLP(resumen()!.total_salidas) }}</span>
+              </div>
+              <div class="panel-row">
+                <span>Devoluciones</span>
+                <span class="neg">−{{ formatCLP(resumen()!.total_devoluciones) }}</span>
+              </div>
+              <div class="panel-sep"></div>
+              <div class="panel-row panel-total">
+                <span>TOTAL EN CAJA:</span>
+                <span>{{ formatCLP(resumen()!.efectivo_en_caja) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Entradas detalle -->
+          @if (resumen()!.entradas_detalle.length > 0) {
+            <div class="section-title"><mat-icon>arrow_downward</mat-icon> Entradas de Efectivo</div>
+            <div class="mov-list">
+              @for (m of resumen()!.entradas_detalle; track m.id) {
+                <div class="mov-row">
+                  <span class="mov-motivo">{{ m.motivo }}</span>
+                  <span class="mov-monto pos">{{ formatCLP(m.monto) }}</span>
+                </div>
+              }
+            </div>
+          }
+
+          <!-- Ventas por departamento -->
+          @if (ventasDept().length > 0) {
+            <div class="section-title"><mat-icon>store</mat-icon> Ventas por Departamento</div>
+            <div class="mov-list">
+              @for (dept of ventasDept(); track dept.nombre) {
+                <div class="mov-row">
+                  <span class="mov-motivo">{{ dept.nombre }}</span>
+                  <span class="mov-monto">{{ formatCLP(dept.total) }}</span>
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- Columna derecha -->
+        <div class="col-derecha">
+          <!-- Ventas panel -->
+          <div class="panel panel-ventas">
+            <div class="panel-title"><mat-icon>receipt_long</mat-icon> Ventas del Turno</div>
+            <div class="panel-rows">
+              <div class="panel-row"><span>En Efectivo</span><span class="pos">{{ formatCLP(resumen()!.total_efectivo) }}</span></div>
+              <div class="panel-row"><span>Con Tarjeta</span><span class="pos">{{ formatCLP(resumen()!.total_tarjeta) }}</span></div>
+              <div class="panel-row"><span>A Crédito</span><span class="pos">{{ formatCLP(resumen()!.total_credito) }}</span></div>
+              @if (resumen()!.total_mixto > 0) {
+                <div class="panel-row"><span>Mixto</span><span class="pos">{{ formatCLP(resumen()!.total_mixto) }}</span></div>
+              }
+              <div class="panel-row"><span>Devoluciones</span><span class="neg">−{{ formatCLP(resumen()!.total_devoluciones) }}</span></div>
+              <div class="panel-sep"></div>
+              <div class="panel-row panel-total">
+                <span>TOTAL VENTAS:</span>
+                <span>{{ formatCLP(resumen()!.total_ventas) }}</span>
+              </div>
+            </div>
+            <div class="tickets-badge">
+              <mat-icon>confirmation_number</mat-icon>
+              {{ resumen()!.cantidad_tickets }} tickets procesados
+            </div>
+          </div>
+
+          <!-- Salidas detalle -->
+          @if (resumen()!.salidas_detalle.length > 0) {
+            <div class="section-title"><mat-icon>arrow_upward</mat-icon> Salidas de Efectivo</div>
+            <div class="mov-list">
+              @for (m of resumen()!.salidas_detalle; track m.id) {
+                <div class="mov-row">
+                  <span class="mov-motivo">{{ m.motivo }}</span>
+                  <span class="mov-monto neg">−{{ formatCLP(m.monto) }}</span>
+                </div>
+              }
+            </div>
+          }
+
+          <!-- Abonos crédito -->
+          @if (resumen()!.abonos_detalle.length > 0) {
+            <div class="section-title"><mat-icon>people</mat-icon> Pagos de Créditos</div>
+            <div class="mov-list">
+              @for (ab of resumen()!.abonos_detalle; track ab.id) {
+                <div class="mov-row">
+                  <span class="mov-motivo">{{ ab.cliente }}</span>
+                  <span class="mov-monto pos">{{ formatCLP(ab.monto) }}</span>
+                </div>
+              }
+            </div>
+          }
+
+          <!-- Top clientes -->
+          @if (resumen()!.clientes_top.length > 0) {
+            <div class="section-title"><mat-icon>people</mat-icon> Clientes con Más Ventas</div>
+            <div class="mov-list">
+              @for (c of resumen()!.clientes_top; track c.cliente_credito__nombre) {
+                <div class="mov-row">
+                  <span class="mov-motivo">{{ c.cliente_credito__nombre }}</span>
+                  <span class="mov-monto">{{ formatCLP(c.total) }}</span>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Turno info -->
+      <div class="turno-info">
+        <mat-icon>schedule</mat-icon>
+        Turno desde: {{ resumen()!.desde ? (resumen()!.desde! | date:'dd/MM/yyyy HH:mm') : 'Inicio del sistema' }}
+      </div>
+
+      <!-- Botón principal -->
+      <div class="corte-action">
+        <button class="btn-hacer-corte" (click)="abrirConfirmacion()">
+          <mat-icon>check_circle</mat-icon>
+          REALIZAR CORTE DE CAJA
+        </button>
+      </div>
+    }
+  }
+
+  <!-- TAB: Historial -->
+  @if (tab() === 'historial') {
+    @if (cargandoHistorial()) {
+      <div class="cargando-container"><mat-icon class="spin">sync</mat-icon> Cargando historial...</div>
+    } @else {
+      <div class="historial-container">
+        @if (historial().length === 0) {
+          <div class="empty-hist">No hay cortes registrados aún.</div>
+        } @else {
+          <table class="historial-table">
+            <thead>
+              <tr>
+                <th class="sortable" (click)="ordenarHistorial('fecha_corte')">Fecha Corte<span class="sort-icon" [class.activo]="isActive(ordenHistorial(),'fecha_corte')">{{ sortIcon(ordenHistorial(),'fecha_corte') }}</span></th>
+                <th class="sortable" (click)="ordenarHistorial('usuario')">Cajero<span class="sort-icon" [class.activo]="isActive(ordenHistorial(),'usuario')">{{ sortIcon(ordenHistorial(),'usuario') }}</span></th>
+                <th class="sortable" (click)="ordenarHistorial('cantidad_tickets')">Tickets<span class="sort-icon" [class.activo]="isActive(ordenHistorial(),'cantidad_tickets')">{{ sortIcon(ordenHistorial(),'cantidad_tickets') }}</span></th>
+                <th class="sortable" (click)="ordenarHistorial('total_ventas')">Total Ventas<span class="sort-icon" [class.activo]="isActive(ordenHistorial(),'total_ventas')">{{ sortIcon(ordenHistorial(),'total_ventas') }}</span></th>
+                <th class="sortable" (click)="ordenarHistorial('efectivo_en_caja')">Efectivo en Caja<span class="sort-icon" [class.activo]="isActive(ordenHistorial(),'efectivo_en_caja')">{{ sortIcon(ordenHistorial(),'efectivo_en_caja') }}</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (c of historialOrdenado(); track c.id) {
+                <tr>
+                  <td>{{ c.fecha_corte | date:'dd/MM/yyyy HH:mm' }}</td>
+                  <td>{{ c.usuario }}</td>
+                  <td class="td-num">{{ c.cantidad_tickets }}</td>
+                  <td class="td-num">{{ formatCLP(c.total_ventas) }}</td>
+                  <td class="td-num">{{ formatCLP(c.efectivo_en_caja) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </div>
+    }
+  }
+</div>
+
+<!-- Dialog de confirmación -->
+@if (dialogConfirmar()) {
+  <div class="modal-backdrop" (click)="dialogConfirmar.set(false)">
+    <div class="modal-corte" (click)="$event.stopPropagation()">
+      <div class="modal-header-corte">
+        <mat-icon>warning</mat-icon>
+        <h3>¿Confirmar corte de caja?</h3>
+      </div>
+      <div class="modal-body-corte">
+        <p>Esta acción cerrará tu sesión automáticamente.</p>
+        <p>Asegúrate de haber impreso el resumen si lo necesitas.</p>
+      </div>
+      <div class="modal-footer-corte">
+        <button class="btn-cancelar-corte" (click)="dialogConfirmar.set(false)">
+          <mat-icon>close</mat-icon> Cancelar
+        </button>
+        <button class="btn-imprimir-corte" (click)="confirmar(true)" [disabled]="confirmando()">
+          <mat-icon>print</mat-icon>
+          @if (confirmando()) { Procesando... } @else { Imprimir y Confirmar }
+        </button>
+        <button class="btn-solo-confirmar" (click)="confirmar(false)" [disabled]="confirmando()">
+          <mat-icon>check_circle</mat-icon>
+          @if (confirmando()) { Procesando... } @else { Solo Confirmar }
+        </button>
+      </div>
+    </div>
+  </div>
+}

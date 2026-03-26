@@ -1,0 +1,170 @@
+<div class="importar-dialog">
+
+  <!-- Header -->
+  <div class="importar-header">
+    <div class="importar-title">
+      <mat-icon>upload_file</mat-icon>
+      <h2>Importar Productos desde Excel</h2>
+    </div>
+    <button mat-icon-button (click)="cerrar()"><mat-icon>close</mat-icon></button>
+  </div>
+
+  <div class="importar-body">
+
+    <!-- ── ESTADO: inicial / preview ──────────────────────── -->
+    @if (estado() !== 'resultado') {
+
+      <!-- Instrucciones -->
+      <div class="instrucciones">
+        <mat-icon>info</mat-icon>
+        <span>Descarga la plantilla, llena los datos y súbela aquí.
+          El <strong>Código</strong> es el identificador único — si ya existe se actualizará.</span>
+      </div>
+
+      <!-- Plantilla -->
+      <button mat-stroked-button class="btn-plantilla" (click)="descargarPlantilla()">
+        <mat-icon>download</mat-icon> Descargar Plantilla Excel
+      </button>
+
+      <!-- Dropzone -->
+      <label class="dropzone" [class.tiene-archivo]="archivo() !== null">
+        <input type="file" accept=".xlsx,.csv" (change)="onArchivoChange($event)" hidden>
+        @if (cargandoPreview()) {
+          <mat-progress-bar mode="indeterminate" class="progress-leer"></mat-progress-bar>
+          <span class="drop-texto">Leyendo archivo...</span>
+        } @else if (archivo()) {
+          <mat-icon class="drop-icon ok">check_circle</mat-icon>
+          <span class="drop-texto">{{ archivo()!.name }}</span>
+          <span class="drop-sub">Clic para cambiar archivo</span>
+        } @else {
+          <mat-icon class="drop-icon">cloud_upload</mat-icon>
+          <span class="drop-texto">Arrastra un archivo o haz clic aquí</span>
+          <span class="drop-sub">Formatos aceptados: .xlsx, .csv</span>
+        }
+      </label>
+
+      @if (errorMsg()) {
+        <div class="error-msg"><mat-icon>error</mat-icon> {{ errorMsg() }}</div>
+      }
+
+      <!-- Vista previa -->
+      @if (preview() && estado() === 'preview') {
+        <div class="preview-section">
+          <div class="preview-header">
+            <span class="preview-title">
+              <mat-icon>table_view</mat-icon>
+              Vista previa (primeras {{ preview()!.filas.length }} filas)
+            </span>
+            <span class="reconocidas-badge">
+              {{ reconocidas }} de {{ totalColumnas }} columnas reconocidas
+            </span>
+          </div>
+          <div class="preview-tabla-wrap">
+            <table class="preview-tabla">
+              <thead>
+                <tr>
+                  @for (col of preview()!.columnas; track $index) {
+                    <th [class.col-ok]="preview()!.columnas_reconocidas.includes(col.toLowerCase())">
+                      {{ col }}
+                    </th>
+                  }
+                </tr>
+              </thead>
+              <tbody>
+                @for (fila of preview()!.filas; track $index) {
+                  <tr>
+                    @for (celda of fila; track $index) {
+                      <td>{{ celda }}</td>
+                    }
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      }
+    }
+
+    <!-- ── ESTADO: importando ─────────────────────────────── -->
+    @if (estado() === 'importando') {
+      <div class="importando-state">
+        <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+        <p>Procesando importación, espere...</p>
+      </div>
+    }
+
+    <!-- ── ESTADO: resultado ──────────────────────────────── -->
+    @if (estado() === 'resultado' && resultado()) {
+      <div class="resultado-section">
+        <div class="resultado-resumen">
+          @if (resultado()!.creados > 0) {
+            <div class="res-item res-ok">
+              <mat-icon>add_circle</mat-icon>
+              <strong>{{ resultado()!.creados }}</strong> producto(s) creado(s)
+            </div>
+          }
+          @if (resultado()!.actualizados > 0) {
+            <div class="res-item res-updated">
+              <mat-icon>update</mat-icon>
+              <strong>{{ resultado()!.actualizados }}</strong> producto(s) actualizado(s)
+            </div>
+          }
+          @if (resultado()!.errores.length > 0) {
+            <div class="res-item res-warn">
+              <mat-icon>warning</mat-icon>
+              <strong>{{ resultado()!.errores.length }}</strong> error(es)
+            </div>
+          }
+          @if (resultado()!.creados === 0 && resultado()!.actualizados === 0 && resultado()!.errores.length === 0) {
+            <div class="res-item res-ok">
+              <mat-icon>check_circle</mat-icon>
+              Sin cambios (todas las filas estaban vacías)
+            </div>
+          }
+        </div>
+
+        @if (resultado()!.errores.length > 0) {
+          <button mat-button class="btn-ver-errores"
+                  (click)="mostrarErrores.update(v => !v)">
+            <mat-icon>{{ mostrarErrores() ? 'expand_less' : 'expand_more' }}</mat-icon>
+            {{ mostrarErrores() ? 'Ocultar errores' : 'Ver detalle de errores' }}
+          </button>
+          @if (mostrarErrores()) {
+            <table class="errores-tabla">
+              <thead><tr><th>Fila</th><th>Motivo</th></tr></thead>
+              <tbody>
+                @for (e of resultado()!.errores; track e.fila) {
+                  <tr>
+                    <td class="fila-num">{{ e.fila }}</td>
+                    <td>{{ e.motivo }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        }
+      </div>
+    }
+
+  </div>
+
+  <!-- Footer -->
+  <div class="importar-footer">
+    @if (estado() === 'resultado') {
+      <button mat-stroked-button (click)="resetear()">
+        <mat-icon>refresh</mat-icon> Nueva Importación
+      </button>
+      <button mat-raised-button color="primary" (click)="cerrar()">
+        <mat-icon>check</mat-icon> Cerrar
+      </button>
+    } @else if (estado() === 'preview') {
+      <button mat-button (click)="resetear()">Cancelar</button>
+      <button mat-raised-button color="primary" (click)="importar()">
+        <mat-icon>upload</mat-icon> Importar
+      </button>
+    } @else {
+      <button mat-button (click)="cerrar()">Cerrar</button>
+    }
+  </div>
+
+</div>

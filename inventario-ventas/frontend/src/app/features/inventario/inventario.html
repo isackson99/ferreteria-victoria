@@ -1,0 +1,488 @@
+<app-navbar></app-navbar>
+
+<div class="inv-layout">
+  <aside class="inv-sidebar">
+    <div class="sidebar-titulo">Inventario</div>
+    @for (item of navItems; track item.vista) {
+      <button class="nav-item" [class.active]="vista() === item.vista" (click)="setVista(item.vista)">
+        <mat-icon>{{ item.icono }}</mat-icon>
+        <span>{{ item.label }}</span>
+      </button>
+    }
+  </aside>
+
+  <main class="inv-contenido">
+
+    <!-- ═══════════════════════════════════════════
+         AJUSTE DE STOCK
+    ═══════════════════════════════════════════ -->
+    @if (vista() === 'ajuste') {
+      <div class="vista-header">
+        <div>
+          <h2>Ajuste de Inventario</h2>
+          <p class="subtitulo">Registra entradas, salidas y correcciones de stock</p>
+        </div>
+      </div>
+
+      <div class="codigo-buscador">
+        <mat-form-field appearance="outline" class="codigo-input">
+          <mat-label>Código del Producto</mat-label>
+          <mat-icon matPrefix>qr_code_scanner</mat-icon>
+          <input matInput [(ngModel)]="codigoInput"
+                 (keydown.enter)="buscarPorCodigo()"
+                 placeholder="Escanea o escribe el código y presiona Enter">
+        </mat-form-field>
+        <button mat-raised-button color="primary" (click)="abrirBuscador()">
+          <mat-icon>search</mat-icon> [F10] Buscar
+        </button>
+      </div>
+
+      @if (!productoSeleccionado()) {
+        <div class="empty-state">
+          <mat-icon>tune</mat-icon>
+          <p>Escanea un código o usa el buscador para seleccionar un producto</p>
+        </div>
+      } @else {
+        <div class="ajuste-card">
+
+          <div class="ajuste-field-row">
+            <span class="ajuste-label">Descripción</span>
+            <span class="ajuste-value readonly-text">{{ productoSeleccionado()!.nombre }}</span>
+          </div>
+
+          <div class="ajuste-field-row cantidad-actual-row">
+            <span class="ajuste-label">Cantidad Actual</span>
+            <span class="cantidad-actual-num" [ngClass]="colorStock(productoSeleccionado()!)">
+              {{ productoSeleccionado()!.inventario_actual }}
+            </span>
+          </div>
+
+          <div class="ajuste-doble-input">
+            <mat-form-field appearance="outline">
+              <mat-label>+ / -</mat-label>
+              <input matInput type="number" step="any"
+                     [(ngModel)]="deltaCantidad"
+                     (ngModelChange)="onDeltaChange()">
+              <mat-hint>Positivo suma · negativo resta</mat-hint>
+            </mat-form-field>
+
+            <div class="preview-flecha">
+              @if (nuevaCantidad !== null) {
+                <div class="preview-chip"
+                     [class.preview-pos]="nuevaCantidad > +productoSeleccionado()!.inventario_actual"
+                     [class.preview-neg]="nuevaCantidad < +productoSeleccionado()!.inventario_actual"
+                     [class.preview-neutral]="nuevaCantidad === +productoSeleccionado()!.inventario_actual">
+                  Nueva cantidad:&nbsp;<strong>{{ nuevaCantidad }}</strong>
+                </div>
+              } @else {
+                <mat-icon class="icono-flecha">arrow_forward</mat-icon>
+              }
+            </div>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Nueva Cantidad</mat-label>
+              <input matInput type="number" min="0" step="any"
+                     [(ngModel)]="nuevaCantidad"
+                     (ngModelChange)="onNuevaCantidadChange()">
+            </mat-form-field>
+          </div>
+
+          <div class="precios-readonly">
+            <div class="precio-campo">
+              <span class="precio-label">Costo</span>
+              <span class="precio-valor">$ {{ productoSeleccionado()!.precio_costo }}</span>
+            </div>
+            <div class="precio-campo">
+              <span class="precio-label">Precio Venta</span>
+              <span class="precio-valor">$ {{ productoSeleccionado()!.precio_venta }}</span>
+            </div>
+            <div class="precio-campo">
+              <span class="precio-label">Precio Mayoreo</span>
+              <span class="precio-valor">
+                {{ productoSeleccionado()!.precio_mayoreo ? '$ ' + productoSeleccionado()!.precio_mayoreo : '—' }}
+              </span>
+            </div>
+          </div>
+
+          <mat-form-field appearance="outline" class="motivo-field">
+            <mat-label>Motivo del ajuste</mat-label>
+            <input matInput [(ngModel)]="motivo"
+                   placeholder="Ej: Conteo físico, devolución de proveedor, corrección...">
+          </mat-form-field>
+
+          <div class="ajuste-actions">
+            <button mat-raised-button color="primary" (click)="guardarAjuste()"
+              [disabled]="cargando() || nuevaCantidad === null || nuevaCantidad < 0">
+              <mat-icon>check</mat-icon>
+              {{ cargando() ? 'Guardando...' : 'Realizar Ajuste de Inventario' }}
+            </button>
+          </div>
+
+        </div>
+      }
+    }
+
+    <!-- ═══════════════════════════════════════════
+         STOCK CRÍTICO
+    ═══════════════════════════════════════════ -->
+    @if (vista() === 'stock_bajo') {
+      <div class="vista-header">
+        <div>
+          <h2>Stock Crítico</h2>
+          <p class="subtitulo">Productos con existencias agotadas o por debajo del mínimo</p>
+        </div>
+        <button mat-stroked-button (click)="cargarStockCritico()">
+          <mat-icon>refresh</mat-icon> Actualizar
+        </button>
+      </div>
+
+      @if (!stockCritico()) {
+        <div class="loading-center"><mat-spinner diameter="40"></mat-spinner></div>
+      } @else {
+        <div class="seccion-critica">
+          <h3 class="seccion-titulo rojo">
+            <mat-icon>error</mat-icon>
+            Agotados ({{ stockCritico()!.agotados.length }})
+          </h3>
+          @if (stockCritico()!.agotados.length === 0) {
+            <p class="sin-datos">No hay productos agotados</p>
+          } @else {
+            <table class="tabla-datos">
+              <thead>
+                <tr><th>Código</th><th>Nombre</th><th>Stock</th><th>Mínimo</th></tr>
+              </thead>
+              <tbody>
+                @for (item of stockCritico()!.agotados; track item.id) {
+                  <tr>
+                    <td class="codigo">{{ item.codigo }}</td>
+                    <td>{{ item.nombre }}</td>
+                    <td><span class="badge stock-rojo">{{ item.inventario_actual }}</span></td>
+                    <td>{{ item.inventario_minimo }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        </div>
+
+        <div class="seccion-critica">
+          <h3 class="seccion-titulo naranja">
+            <mat-icon>warning</mat-icon>
+            Stock Bajo ({{ stockCritico()!.stock_bajo.length }})
+          </h3>
+          @if (stockCritico()!.stock_bajo.length === 0) {
+            <p class="sin-datos">No hay productos en stock bajo</p>
+          } @else {
+            <table class="tabla-datos">
+              <thead>
+                <tr><th>Código</th><th>Nombre</th><th>Stock</th><th>Mínimo</th></tr>
+              </thead>
+              <tbody>
+                @for (item of stockCritico()!.stock_bajo; track item.id) {
+                  <tr>
+                    <td class="codigo">{{ item.codigo }}</td>
+                    <td>{{ item.nombre }}</td>
+                    <td><span class="badge stock-naranja">{{ item.inventario_actual }}</span></td>
+                    <td>{{ item.inventario_minimo }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        </div>
+      }
+    }
+
+    <!-- ═══════════════════════════════════════════
+         REPORTE DE INVENTARIO
+    ═══════════════════════════════════════════ -->
+    @if (vista() === 'reporte') {
+
+      <!-- Métricas destacadas -->
+      <div class="reporte-metricas">
+        <div class="metrica-card">
+          <span class="metrica-label">Costo del Inventario</span>
+          <span class="metrica-valor">$ {{ costoTotalInventario() | number:'1.0-0' }}</span>
+          <span class="metrica-sub">valor en costo de todos los productos</span>
+        </div>
+        <div class="metrica-card">
+          <span class="metrica-label">Cantidad en Inventario</span>
+          <span class="metrica-valor">{{ cantidadTotalInventario() | number:'1.0-0' }}</span>
+          <span class="metrica-sub">unidades · {{ productosReporte().length }} productos activos</span>
+        </div>
+      </div>
+
+      <!-- Toolbar de filtros y acciones -->
+      <div class="reporte-toolbar">
+        <mat-form-field appearance="outline" class="toolbar-select">
+          <mat-label>Departamento</mat-label>
+          <mat-select [ngModel]="filtroCategoria()" (ngModelChange)="filtroCategoria.set($event)">
+            <mat-option [value]="''">Todos</mat-option>
+            @for (cat of categorias(); track cat.id) {
+              <mat-option [value]="cat.id">{{ cat.nombre }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="toolbar-search">
+          <mat-label>Buscar</mat-label>
+          <input matInput [ngModel]="filtroReporte()" (ngModelChange)="filtroReporte.set($event)"
+                 placeholder="Nombre o código">
+          <mat-icon matSuffix>search</mat-icon>
+        </mat-form-field>
+
+        <div class="toolbar-acciones">
+          <button mat-raised-button color="primary"
+                  [disabled]="!productoReporteSeleccionado"
+                  (click)="navegarAModificar()">
+            <mat-icon>edit</mat-icon> Modificar Producto
+          </button>
+          <button mat-stroked-button (click)="cargarReporte()" matTooltip="Actualizar">
+            <mat-icon>refresh</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      @if (conteoSinCosto() > 0) {
+        <div class="alerta-sin-costo" [class.activa]="soloSinCosto()" (click)="soloSinCosto.set(!soloSinCosto())">
+          <span>⚠ {{ conteoSinCosto() }} producto(s) sin precio costo cargado</span>
+          <span class="alerta-filtro-hint">{{ soloSinCosto() ? 'Mostrando solo sin costo · clic para quitar filtro' : 'Clic para filtrar' }}</span>
+        </div>
+      }
+
+      <p class="reporte-conteo">
+        Mostrando {{ productosFiltrados().length }} de {{ productosReporte().length }} productos
+      </p>
+
+      @if (cargando()) {
+        <div class="loading-center"><mat-spinner diameter="40"></mat-spinner></div>
+      } @else {
+        <table class="tabla-datos tabla-reporte">
+          <thead>
+            <tr>
+              <th class="sortable" (click)="ordenarReporte('codigo')">Código<span class="sort-icon" [class.activo]="isActive(ordenReporte(),'codigo')">{{ sortIcon(ordenReporte(),'codigo') }}</span></th>
+              <th class="sortable" (click)="ordenarReporte('nombre')">Descripción<span class="sort-icon" [class.activo]="isActive(ordenReporte(),'nombre')">{{ sortIcon(ordenReporte(),'nombre') }}</span></th>
+              <th class="sortable" (click)="ordenarReporte('categoria_nombre')">Departamento<span class="sort-icon" [class.activo]="isActive(ordenReporte(),'categoria_nombre')">{{ sortIcon(ordenReporte(),'categoria_nombre') }}</span></th>
+              <th class="text-right sortable" (click)="ordenarReporte('precio_costo')">Costo<span class="sort-icon" [class.activo]="isActive(ordenReporte(),'precio_costo')">{{ sortIcon(ordenReporte(),'precio_costo') }}</span></th>
+              <th class="text-right sortable" (click)="ordenarReporte('precio_venta')">Precio Venta<span class="sort-icon" [class.activo]="isActive(ordenReporte(),'precio_venta')">{{ sortIcon(ordenReporte(),'precio_venta') }}</span></th>
+              <th class="text-right sortable" (click)="ordenarReporte('inventario_actual')">Existencia<span class="sort-icon" [class.activo]="isActive(ordenReporte(),'inventario_actual')">{{ sortIcon(ordenReporte(),'inventario_actual') }}</span></th>
+              <th class="text-right sortable" (click)="ordenarReporte('inventario_minimo')">Inv. Mínimo<span class="sort-icon" [class.activo]="isActive(ordenReporte(),'inventario_minimo')">{{ sortIcon(ordenReporte(),'inventario_minimo') }}</span></th>
+              <th class="text-right sortable" (click)="ordenarReporte('inventario_maximo')">Inv. Máximo<span class="sort-icon" [class.activo]="isActive(ordenReporte(),'inventario_maximo')">{{ sortIcon(ordenReporte(),'inventario_maximo') }}</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (p of productosFiltrados(); track p.id) {
+              <tr (click)="productoReporteSeleccionado = p"
+                  [class.fila-seleccionada]="productoReporteSeleccionado?.id === p.id">
+                <td class="codigo">{{ p.codigo }}</td>
+                <td>{{ p.nombre }}</td>
+                <td>{{ p.categoria_nombre || '—' }}</td>
+                <td class="numero" [class.costo-cero]="Number(p.precio_costo) === 0">$ {{ p.precio_costo }}</td>
+                <td class="numero">$ {{ p.precio_venta }}</td>
+                <td class="numero">
+                  <span class="badge" [ngClass]="colorStock(p)">{{ p.inventario_actual }}</span>
+                </td>
+                <td class="numero">{{ p.inventario_minimo }}</td>
+                <td class="numero">{{ p.inventario_maximo || '—' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+        @if (productosFiltrados().length === 0) {
+          <p class="sin-datos">No se encontraron productos</p>
+        }
+      }
+    }
+
+    <!-- ═══════════════════════════════════════════
+         MOVIMIENTOS
+    ═══════════════════════════════════════════ -->
+    @if (vista() === 'movimientos') {
+      <div class="vista-header">
+        <div>
+          <h2>Historial de Movimientos de Inventario</h2>
+          <p class="subtitulo">{{ movimientos().length }} movimiento(s) encontrado(s)</p>
+        </div>
+      </div>
+
+      <div class="filtros-mov">
+        <mat-form-field appearance="outline">
+          <mat-label>Del día:</mat-label>
+          <input matInput type="date" [(ngModel)]="filtroFecha">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="busqueda-mov">
+          <mat-label>Buscar por:</mat-label>
+          <input matInput [(ngModel)]="busquedaMov" placeholder="Nombre o código del producto">
+          <mat-icon matSuffix>search</mat-icon>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Movimientos:</mat-label>
+          <mat-select [(ngModel)]="filtroTipo">
+            <mat-option value="">Todos</mat-option>
+            <mat-option value="venta">Venta</mat-option>
+            <mat-option value="entrada">Entrada</mat-option>
+            <mat-option value="ajuste">Ajuste</mat-option>
+            <mat-option value="devolucion">Devolución</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <button mat-raised-button color="primary" (click)="cargarMovimientos()">
+          <mat-icon>search</mat-icon> Buscar
+        </button>
+      </div>
+
+      @if (cargando()) {
+        <div class="loading-center"><mat-spinner diameter="40"></mat-spinner></div>
+      } @else {
+        <table class="tabla-datos tabla-movimientos">
+          <thead>
+            <tr>
+              <th class="sortable" (click)="ordenarMovimientos('fecha')">Hora<span class="sort-icon" [class.activo]="isActive(ordenMovimientos(),'fecha')">{{ sortIcon(ordenMovimientos(),'fecha') }}</span></th>
+              <th class="sortable" (click)="ordenarMovimientos('producto_nombre')">Producto<span class="sort-icon" [class.activo]="isActive(ordenMovimientos(),'producto_nombre')">{{ sortIcon(ordenMovimientos(),'producto_nombre') }}</span></th>
+              <th>Movimiento</th>
+              <th class="text-right sortable" (click)="ordenarMovimientos('stock_antes')">Había<span class="sort-icon" [class.activo]="isActive(ordenMovimientos(),'stock_antes')">{{ sortIcon(ordenMovimientos(),'stock_antes') }}</span></th>
+              <th class="sortable" (click)="ordenarMovimientos('tipo')">Tipo<span class="sort-icon" [class.activo]="isActive(ordenMovimientos(),'tipo')">{{ sortIcon(ordenMovimientos(),'tipo') }}</span></th>
+              <th class="text-right sortable" (click)="ordenarMovimientos('cantidad')">Cantidad<span class="sort-icon" [class.activo]="isActive(ordenMovimientos(),'cantidad')">{{ sortIcon(ordenMovimientos(),'cantidad') }}</span></th>
+              <th class="text-right sortable" (click)="ordenarMovimientos('stock_despues')">Hay<span class="sort-icon" [class.activo]="isActive(ordenMovimientos(),'stock_despues')">{{ sortIcon(ordenMovimientos(),'stock_despues') }}</span></th>
+              <th class="sortable" (click)="ordenarMovimientos('usuario')">Usuario<span class="sort-icon" [class.activo]="isActive(ordenMovimientos(),'usuario')">{{ sortIcon(ordenMovimientos(),'usuario') }}</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (m of movimientosFiltrados(); track m.id) {
+              <tr (click)="movimientoSeleccionado = m"
+                  [class.fila-seleccionada]="movimientoSeleccionado?.id === m.id">
+                <td class="hora">{{ m.fecha | date:'h:mm a' | lowercase }}</td>
+                <td>
+                  <span class="codigo">{{ m.producto_codigo }}</span>
+                  {{ m.producto_nombre }}
+                </td>
+                <td class="referencia-cell">{{ referenciaMovimiento(m) }}</td>
+                <td class="numero">{{ m.stock_antes }}</td>
+                <td>
+                  <span class="badge" [ngClass]="tipoDisplayMov(m).clase">
+                    {{ tipoDisplayMov(m).label }}
+                  </span>
+                </td>
+                <td class="numero cantidad-signed" [ngClass]="cantidadClase(m)">
+                  {{ cantidadConSigno(m) }}
+                </td>
+                <td class="numero">{{ m.stock_despues }}</td>
+                <td>{{ m.usuario || '—' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+
+        @if (movimientosFiltrados().length === 0) {
+          <p class="sin-datos">No hay movimientos para los filtros seleccionados</p>
+        }
+
+        @if (movimientosFiltrados().length > 0) {
+          <div class="movimientos-pie">
+            <button mat-stroked-button disabled>
+              <mat-icon>download</mat-icon> Exportar movimientos...
+            </button>
+            <button mat-stroked-button (click)="imprimirMovimientos()">
+              <mat-icon>print</mat-icon> Imprimir...
+            </button>
+          </div>
+        }
+      }
+    }
+
+    <!-- ═══════════════════════════════════════════
+         KARDEX
+    ═══════════════════════════════════════════ -->
+    @if (vista() === 'kardex') {
+      <div class="vista-header">
+        <div>
+          <h2>Kardex de Producto</h2>
+          <p class="subtitulo">Historial completo de movimientos por producto</p>
+        </div>
+        <button mat-raised-button color="primary" (click)="abrirBuscador()">
+          <mat-icon>search</mat-icon> Seleccionar Producto
+        </button>
+      </div>
+
+      @if (!productoSeleccionado()) {
+        <div class="empty-state">
+          <mat-icon>receipt_long</mat-icon>
+          <p>Selecciona un producto para ver su historial de movimientos</p>
+        </div>
+      } @else {
+        <div class="prod-card">
+          <div class="prod-card-header">
+            <span class="prod-codigo">{{ productoSeleccionado()!.codigo }}</span>
+            <span class="prod-nombre">{{ productoSeleccionado()!.nombre }}</span>
+            <span class="prod-cat">{{ productoSeleccionado()!.categoria_nombre }}</span>
+          </div>
+          <div class="prod-card-stats">
+            <div class="stat-box">
+              <label>Stock actual</label>
+              <span [ngClass]="colorStock(productoSeleccionado()!)">{{ productoSeleccionado()!.inventario_actual }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="filtros-bar">
+          <mat-form-field appearance="outline">
+            <mat-label>Desde</mat-label>
+            <input matInput type="date" [(ngModel)]="kardexDesde">
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Hasta</mat-label>
+            <input matInput type="date" [(ngModel)]="kardexHasta">
+          </mat-form-field>
+          <button mat-raised-button color="primary" (click)="cargarKardex()">
+            <mat-icon>search</mat-icon> Filtrar
+          </button>
+          <mat-form-field appearance="outline" class="busqueda-kardex">
+            <mat-label>Filtrar</mat-label>
+            <input matInput [ngModel]="busquedaKardex()" (ngModelChange)="busquedaKardex.set($event)" placeholder="Tipo, motivo, usuario...">
+            <mat-icon matSuffix>search</mat-icon>
+          </mat-form-field>
+        </div>
+
+        @if (cargando()) {
+          <div class="loading-center"><mat-spinner diameter="40"></mat-spinner></div>
+        } @else if (kardex()) {
+          @if (kardexFiltrado().length === 0) {
+            <p class="sin-datos">Sin movimientos en el período seleccionado</p>
+          } @else {
+            <table class="tabla-datos">
+              <thead>
+                <tr>
+                  <th class="sortable" (click)="ordenarKardex('fecha')">Fecha<span class="sort-icon" [class.activo]="isActive(ordenKardex(),'fecha')">{{ sortIcon(ordenKardex(),'fecha') }}</span></th>
+                  <th class="sortable" (click)="ordenarKardex('tipo_display')">Tipo<span class="sort-icon" [class.activo]="isActive(ordenKardex(),'tipo_display')">{{ sortIcon(ordenKardex(),'tipo_display') }}</span></th>
+                  <th class="text-right sortable" (click)="ordenarKardex('cantidad')">Cantidad<span class="sort-icon" [class.activo]="isActive(ordenKardex(),'cantidad')">{{ sortIcon(ordenKardex(),'cantidad') }}</span></th>
+                  <th class="text-right sortable" (click)="ordenarKardex('stock_antes')">Antes<span class="sort-icon" [class.activo]="isActive(ordenKardex(),'stock_antes')">{{ sortIcon(ordenKardex(),'stock_antes') }}</span></th>
+                  <th class="text-right sortable" (click)="ordenarKardex('stock_despues')">Después<span class="sort-icon" [class.activo]="isActive(ordenKardex(),'stock_despues')">{{ sortIcon(ordenKardex(),'stock_despues') }}</span></th>
+                  <th class="sortable" (click)="ordenarKardex('motivo')">Motivo<span class="sort-icon" [class.activo]="isActive(ordenKardex(),'motivo')">{{ sortIcon(ordenKardex(),'motivo') }}</span></th>
+                  <th class="sortable" (click)="ordenarKardex('usuario')">Usuario<span class="sort-icon" [class.activo]="isActive(ordenKardex(),'usuario')">{{ sortIcon(ordenKardex(),'usuario') }}</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (m of kardexFiltrado(); track m.id) {
+                  <tr>
+                    <td class="fecha">{{ m.fecha | date:'dd/MM/yyyy HH:mm' }}</td>
+                    <td><span class="badge" [ngClass]="tipoBadge(m.tipo)">{{ m.tipo_display }}</span></td>
+                    <td class="numero cantidad-signed" [ngClass]="cantidadClase(m)">
+                      {{ cantidadConSigno(m) }}
+                    </td>
+                    <td class="numero">{{ m.stock_antes }}</td>
+                    <td class="numero">{{ m.stock_despues }}</td>
+                    <td>{{ m.motivo || '—' }}</td>
+                    <td>{{ m.usuario || '—' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        }
+      }
+    }
+
+  </main>
+</div>

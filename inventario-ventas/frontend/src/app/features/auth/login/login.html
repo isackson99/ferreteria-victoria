@@ -1,0 +1,39 @@
+<div class="login-container">
+  <mat-card class="login-card">
+    <mat-card-header>
+      <mat-card-title>Ferretería Victoria</mat-card-title>
+      <mat-card-subtitle>Sistema de Punto de Venta</mat-card-subtitle>
+    </mat-card-header>
+
+    <mat-card-content>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Usuario</mat-label>
+        <input matInput [(ngModel)]="username" (keyup.enter)="login()" autocomplete="username">
+        <mat-icon matPrefix>person</mat-icon>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Contraseña</mat-label>
+        <input matInput [(ngModel)]="password" [type]="mostrarPassword() ? 'text' : 'password'" (keyup.enter)="login()" autocomplete="current-password">
+        <mat-icon matPrefix>lock</mat-icon>
+        <button mat-icon-button matSuffix (click)="mostrarPassword.set(!mostrarPassword())">
+          <mat-icon>{{ mostrarPassword() ? 'visibility_off' : 'visibility' }}</mat-icon>
+        </button>
+      </mat-form-field>
+
+      @if (error()) {
+        <p class="error-msg">{{ error() }}</p>
+      }
+    </mat-card-content>
+
+    <mat-card-actions>
+      <button mat-raised-button color="primary" class="full-width" (click)="login()" [disabled]="cargando()">
+        @if (cargando()) {
+          <mat-spinner diameter="20"></mat-spinner>
+        } @else {
+          Ingresar
+        }
+      </button>
+    </mat-card-actions>
+  </mat-card>
+</div>

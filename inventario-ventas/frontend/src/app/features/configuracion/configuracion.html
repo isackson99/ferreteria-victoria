@@ -1,0 +1,194 @@
+<app-navbar></app-navbar>
+
+<div class="cfg-page">
+  <div class="cfg-container">
+
+    <div class="cfg-header">
+      <mat-icon>print</mat-icon>
+      <h1>Configuración de Impresión</h1>
+    </div>
+
+    <!-- ===== INFO IMPRESORA ===== -->
+    <div class="cfg-card cfg-card-info">
+      <div class="card-titulo">
+        <mat-icon>info</mat-icon>
+        Cómo configurar tu impresora térmica
+      </div>
+      <div class="card-body">
+        <p>El sistema usa la <strong>impresora predeterminada de Chrome</strong>.</p>
+        <ol class="pasos">
+          <li>Pulsa <strong>Imprimir ticket de prueba</strong> abajo</li>
+          <li>En el diálogo de Chrome, selecciona tu <strong>impresora térmica</strong></li>
+          <li>Ajusta el tamaño de papel a <strong>80mm × Auto</strong> (o "Sin márgenes")</li>
+          <li>Desde ese momento Chrome recordará la impresora seleccionada</li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- ===== KIOSK PRINTING ===== -->
+    <div class="cfg-card alerta-kiosk">
+      <div class="card-titulo kiosk-titulo">
+        <mat-icon>warning</mat-icon>
+        Impresión sin diálogos — Chrome Kiosk
+      </div>
+      <div class="card-body">
+        <p>
+          Para que Chrome imprima directamente a la impresora por defecto
+          <strong>sin mostrar ningún diálogo</strong>, debe abrirse con el flag
+          <code>--kiosk-printing</code>.
+        </p>
+        <ol class="pasos">
+          <li>Crea un acceso directo a Chrome en el escritorio</li>
+          <li>Haz clic derecho → <strong>Propiedades</strong></li>
+          <li>En el campo <strong>Destino</strong>, reemplaza el contenido por:</li>
+        </ol>
+        <div class="kiosk-cmd-box">
+          <code class="kiosk-cmd">{{ comandoKiosk }}</code>
+          <button class="btn-copiar" (click)="copiarComando()">
+            <mat-icon>content_copy</mat-icon> Copiar
+          </button>
+        </div>
+        <p class="kiosk-nota">
+          Usa ese acceso directo para abrir Chrome en esta PC.
+          Puedes configurar la impresora por defecto del sistema en
+          <strong>Configuración de Windows → Bluetooth y dispositivos → Impresoras</strong>.
+        </p>
+      </div>
+    </div>
+
+    <!-- ===== OPCIONES ===== -->
+    <div class="cfg-card">
+      <div class="card-titulo">
+        <mat-icon>tune</mat-icon>
+        Opciones de impresión
+      </div>
+      <div class="card-body">
+
+        <label class="toggle-row">
+          <div class="toggle-info">
+            <span class="toggle-label">Imprimir automáticamente al cobrar</span>
+            <span class="toggle-desc">
+              Al pulsar "Cobrar e Imprimir" se envía directo a imprimir sin confirmación adicional.
+            </span>
+          </div>
+          <div class="toggle-ctrl">
+            <input type="checkbox" class="toggle-input" [(ngModel)]="autoImprimir"
+                   (ngModelChange)="onAutoImprimirChange()">
+            <span class="toggle-track">
+              <span class="toggle-thumb"></span>
+            </span>
+          </div>
+        </label>
+
+      </div>
+    </div>
+
+    <!-- ===== ANCHO DE PAPEL ===== -->
+    <div class="cfg-card">
+      <div class="card-titulo">
+        <mat-icon>straighten</mat-icon>
+        Ancho de papel
+      </div>
+      <div class="card-body">
+        <p class="campo-desc-top">Cada equipo guarda su propia configuración. Selecciona el ancho de tu impresora térmica.</p>
+        <div class="radio-opciones">
+          <label class="radio-opcion" [class.seleccionado]="anchoPapel === '80'">
+            <input type="radio" name="ancho" value="80" [(ngModel)]="anchoPapel" (ngModelChange)="onAnchoPapelChange()">
+            <div class="radio-info">
+              <span class="radio-label">80mm</span>
+              <span class="radio-desc">Impresora estándar</span>
+            </div>
+          </label>
+          <label class="radio-opcion" [class.seleccionado]="anchoPapel === '58'">
+            <input type="radio" name="ancho" value="58" [(ngModel)]="anchoPapel" (ngModelChange)="onAnchoPapelChange()">
+            <div class="radio-info">
+              <span class="radio-label">58mm</span>
+              <span class="radio-desc">Impresora compacta</span>
+            </div>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== FORMATO DE DESCRIPCIÓN ===== -->
+    <div class="cfg-card">
+      <div class="card-titulo">
+        <mat-icon>wrap_text</mat-icon>
+        Formato de descripción del producto
+      </div>
+      <div class="card-body">
+        <p class="campo-desc-top">Controla cómo se imprime el nombre del producto cuando es largo.</p>
+        <div class="radio-opciones radio-opciones-col">
+          <label class="radio-opcion" [class.seleccionado]="formatoDescripcion === 'completo'">
+            <input type="radio" name="formato_desc" value="completo" [(ngModel)]="formatoDescripcion" (ngModelChange)="onFormatoDescripcionChange()">
+            <div class="radio-info">
+              <span class="radio-label">Completo (varias líneas)</span>
+              <span class="radio-desc">El nombre se parte en múltiples líneas si no cabe</span>
+            </div>
+          </label>
+          <label class="radio-opcion" [class.seleccionado]="formatoDescripcion === 'corto'">
+            <input type="radio" name="formato_desc" value="corto" [(ngModel)]="formatoDescripcion" (ngModelChange)="onFormatoDescripcionChange()">
+            <div class="radio-info">
+              <span class="radio-label">Corto (una línea)</span>
+              <span class="radio-desc">El nombre se trunca para que todo quede en una sola línea</span>
+            </div>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PRECIO ESPECIAL (solo Admin) ===== -->
+    @if (esAdmin()) {
+      <div class="cfg-card">
+        <div class="card-titulo">
+          <mat-icon>star</mat-icon>
+          Clientes con Precio Especial (Costo sin IVA)
+        </div>
+        <div class="card-body">
+          <p>Los clientes marcados verán sus tickets impresos con precio costo sin IVA sin ninguna etiqueta visible.</p>
+          @if (cargandoClientes()) {
+            <div class="pe-loading">
+              <mat-spinner diameter="28"></mat-spinner>
+              <span>Cargando clientes...</span>
+            </div>
+          } @else if (clientes().length === 0) {
+            <p class="pe-empty">No hay clientes de crédito registrados.</p>
+          } @else {
+            <div class="pe-lista">
+              @for (c of clientes(); track c.id) {
+                <label class="pe-row" [class.pe-row-on]="c.precio_especial">
+                  <span class="pe-nombre">{{ c.nombre }}</span>
+                  <div class="toggle-ctrl">
+                    <input type="checkbox"
+                           class="toggle-input"
+                           [checked]="c.precio_especial"
+                           [disabled]="guardandoId() === c.id"
+                           (change)="togglePrecioEspecial(c)">
+                    <span class="toggle-track">
+                      <span class="toggle-thumb"></span>
+                    </span>
+                  </div>
+                </label>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- ===== TICKET DE PRUEBA ===== -->
+    <div class="cfg-card">
+      <div class="card-titulo">
+        <mat-icon>receipt</mat-icon>
+        Ticket de prueba
+      </div>
+      <div class="card-body prueba-body">
+        <p>Imprime un ticket con datos ficticios para verificar el formato y configurar la impresora.</p>
+        <button class="btn-ppal" (click)="imprimirPrueba()">
+          <mat-icon>print</mat-icon> Imprimir ticket de prueba
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>

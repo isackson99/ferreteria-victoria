@@ -1,0 +1,250 @@
+<app-navbar></app-navbar>
+
+<div class="clientes-page">
+
+  <!-- ══════════ PANEL IZQUIERDO ══════════ -->
+  <div class="panel-izq">
+
+    <div class="panel-search">
+      <mat-icon class="search-icon">search</mat-icon>
+      <input
+        class="buscador"
+        type="text"
+        placeholder="Buscar por RUT o razón social..."
+        [ngModel]="busqueda()"
+        (ngModelChange)="busqueda.set($event)"
+        autocomplete="off">
+    </div>
+
+    <div class="lista-wrap">
+      @if (cargando()) {
+        <div class="lista-estado">
+          <mat-spinner diameter="36"></mat-spinner>
+          <span>Cargando clientes...</span>
+        </div>
+      } @else if (clientesFiltrados().length === 0) {
+        <div class="lista-estado">
+          @if (busqueda()) {
+            <mat-icon>search_off</mat-icon>
+            <span>Sin resultados para "{{ busqueda() }}"</span>
+          } @else {
+            <mat-icon>people_outline</mat-icon>
+            <span>No hay clientes registrados</span>
+          }
+        </div>
+      } @else {
+        @for (c of clientesFiltrados(); track c.id) {
+          <div
+            class="cliente-row"
+            [class.activo]="seleccionado()?.id === c.id"
+            (click)="seleccionar(c)">
+            <div class="avatar" [style.background]="avatarInfo(c).color">
+              {{ avatarInfo(c).iniciales }}
+            </div>
+            <div class="cliente-datos">
+              <div class="cliente-fila1">
+                <span class="cliente-id">#{{ c.id }}</span>
+                <span class="cliente-nombre">{{ c.nombre }}</span>
+                <span class="cliente-rut">{{ c.rut }}</span>
+                @if (c.telefono) {
+                  <span class="cliente-tel">· {{ c.telefono }}</span>
+                }
+              </div>
+              @if (c.correo) {
+                <div class="cliente-correo">{{ c.correo }}</div>
+              }
+            </div>
+          </div>
+        }
+      }
+    </div>
+
+    <div class="panel-footer">
+      <span class="footer-count">
+        {{ clientesFiltrados().length }}
+        cliente{{ clientesFiltrados().length !== 1 ? 's' : '' }}
+      </span>
+      <button class="btn-exportar" (click)="exportarCSV()">
+        <mat-icon>download</mat-icon>
+        Exportar
+      </button>
+    </div>
+
+  </div><!-- fin panel-izq -->
+
+  <!-- ══════════ PANEL DERECHO ══════════ -->
+  <div class="panel-der">
+
+    <!-- Header acciones -->
+    <div class="form-header">
+      <button class="btn-accion btn-nuevo" (click)="nuevoCliente()">
+        <mat-icon>person_add</mat-icon>
+        Nuevo Cliente
+      </button>
+      @if (seleccionado()) {
+        <button class="btn-accion btn-eliminar" (click)="solicitarEliminar()">
+          <mat-icon>delete_outline</mat-icon>
+          Eliminar
+        </button>
+      }
+      @if (seleccionado() || modoNuevo()) {
+        <button
+          class="btn-accion btn-guardar"
+          [disabled]="guardando()"
+          (click)="guardar()">
+          @if (guardando()) {
+            <mat-spinner diameter="16"></mat-spinner>
+          } @else {
+            <mat-icon>save</mat-icon>
+          }
+          Guardar
+        </button>
+      }
+    </div>
+
+    <!-- Estado vacío -->
+    @if (!seleccionado() && !modoNuevo()) {
+      <div class="estado-vacio">
+        <mat-icon>person_search</mat-icon>
+        <p>Selecciona un cliente de la lista<br>o crea uno nuevo</p>
+      </div>
+    }
+
+    <!-- Formulario -->
+    @if (seleccionado() || modoNuevo()) {
+      <div class="form-body">
+
+        <!-- Avatar + título modo -->
+        <div class="form-avatar-row">
+          @if (modoNuevo() && !seleccionado()) {
+            <div class="avatar avatar-xl" style="background:#1a237e">
+              {{ previewIniciales }}
+            </div>
+            <div class="form-modo-info">
+              <span class="form-modo-label">Nuevo cliente</span>
+              <span class="form-modo-sub">Los campos marcados con * son obligatorios</span>
+            </div>
+          } @else if (seleccionado()) {
+            <div class="avatar avatar-xl" [style.background]="avatarInfo(seleccionado()!).color">
+              {{ avatarInfo(seleccionado()!).iniciales }}
+            </div>
+            <div class="form-modo-info">
+              <span class="form-modo-label">{{ seleccionado()!.nombre }}</span>
+              <span class="form-modo-sub">Cliente #{{ seleccionado()!.id }} · desde {{ seleccionado()!.creado | date:'dd/MM/yyyy' }}</span>
+            </div>
+          }
+        </div>
+
+        <!-- RUT -->
+        <div class="campo-grupo">
+          <label class="campo-label">RUT *</label>
+          <div class="campo-input-wrap">
+            <input
+              class="campo-input"
+              [class.input-error]="(rutDuplicado || !rutValido) && fRut.length > 2"
+              [class.input-ok]="rutValido && !rutDuplicado && fRut.length > 2"
+              [value]="fRut"
+              (input)="onRutInput($event)"
+              placeholder="12.345.678-9"
+              autocomplete="off"
+              spellcheck="false">
+            @if (rutDuplicado) {
+              <span class="campo-msg error">RUT ya registrado</span>
+            } @else if (!rutValido && fRut.length > 2) {
+              <span class="campo-msg error">RUT inválido</span>
+            } @else if (rutValido && !rutDuplicado && fRut.length > 2) {
+              <mat-icon class="campo-check">check_circle</mat-icon>
+            }
+          </div>
+        </div>
+
+        <!-- Razón Social -->
+        <div class="campo-grupo">
+          <label class="campo-label">Razón Social *</label>
+          <input
+            class="campo-input"
+            [(ngModel)]="fNombre"
+            placeholder="Nombre o razón social del cliente">
+        </div>
+
+        <!-- Correo + Teléfono en fila -->
+        <div class="campo-fila-doble">
+          <div class="campo-grupo">
+            <label class="campo-label">Correo electrónico</label>
+            <input
+              class="campo-input"
+              type="email"
+              [(ngModel)]="fCorreo"
+              placeholder="correo@empresa.cl">
+          </div>
+          <div class="campo-grupo">
+            <label class="campo-label">Teléfono / Número</label>
+            <input
+              class="campo-input"
+              [(ngModel)]="fTelefono"
+              placeholder="+56 9 1234 5678">
+          </div>
+        </div>
+
+        <!-- Domicilio -->
+        <div class="campo-grupo">
+          <label class="campo-label">Domicilio</label>
+          <input
+            class="campo-input"
+            [(ngModel)]="fDomicilio"
+            placeholder="Dirección completa">
+        </div>
+
+        <!-- Notas -->
+        <div class="campo-grupo">
+          <label class="campo-label">Notas / Comentarios</label>
+          <textarea
+            class="campo-input campo-textarea"
+            [(ngModel)]="fNotas"
+            placeholder="Condiciones especiales, observaciones, etc."
+            rows="3"></textarea>
+        </div>
+
+        <!-- Botones formulario -->
+        <div class="form-btns">
+          <button
+            class="btn-form btn-form-guardar"
+            [disabled]="guardando()"
+            (click)="guardar()">
+            <mat-icon>check</mat-icon>
+            Guardar Cliente
+          </button>
+          <button class="btn-form btn-form-cancelar" (click)="cancelar()">
+            <mat-icon>close</mat-icon>
+            Cancelar
+          </button>
+        </div>
+
+      </div>
+    }<!-- fin form -->
+
+  </div><!-- fin panel-der -->
+
+</div><!-- fin clientes-page -->
+
+<!-- ══════════ DIÁLOGO CONFIRMACIÓN ══════════ -->
+@if (mostrarConfirm) {
+  <div class="confirm-backdrop" (click)="cancelarEliminar()">
+    <div class="confirm-dialog" (click)="$event.stopPropagation()">
+      <div class="confirm-icon-wrap">
+        <mat-icon class="confirm-icon">warning</mat-icon>
+      </div>
+      <p class="confirm-titulo">Confirmar eliminación</p>
+      <p class="confirm-msg">{{ confirmMensaje }}</p>
+      <div class="confirm-btns">
+        <button class="btn-form btn-form-cancelar" (click)="cancelarEliminar()">
+          Cancelar
+        </button>
+        <button class="btn-form btn-form-eliminar" (click)="confirmarEliminar()">
+          <mat-icon>delete</mat-icon>
+          Eliminar
+        </button>
+      </div>
+    </div>
+  </div>
+}

@@ -1,0 +1,215 @@
+<app-navbar></app-navbar>
+
+<div class="reportes-page">
+
+  <!-- Barra de filtros -->
+  <div class="filtros-bar">
+    <div class="periodos">
+      <button class="periodo-btn" [class.activo]="periodo() === 'semana'"        (click)="seleccionarPeriodo('semana')">Semana Actual</button>
+      <button class="periodo-btn" [class.activo]="periodo() === 'mes'"           (click)="seleccionarPeriodo('mes')">Mes Actual</button>
+      <button class="periodo-btn" [class.activo]="periodo() === 'mes_anterior'"  (click)="seleccionarPeriodo('mes_anterior')">Mes Anterior</button>
+      <button class="periodo-btn" [class.activo]="periodo() === 'año'"           (click)="seleccionarPeriodo('año')">Año Actual</button>
+      <button class="periodo-btn" [class.activo]="periodo() === 'personalizado'" (click)="seleccionarPeriodo('personalizado')">
+        <mat-icon>date_range</mat-icon> Período...
+      </button>
+    </div>
+
+    @if (isAdmin() && usuarios().length > 0) {
+      <div class="usuario-filtro">
+        <mat-icon>person</mat-icon>
+        <select class="select-usuario" [ngModel]="usuarioId()" (ngModelChange)="cambiarUsuario($event ? +$event : null)">
+          <option [value]="null">Todas las Cajas</option>
+          @for (u of usuarios(); track u.id) {
+            <option [value]="u.id">{{ u.username }}</option>
+          }
+        </select>
+      </div>
+    }
+  </div>
+
+  <!-- Filtro personalizado -->
+  @if (periodo() === 'personalizado') {
+    <div class="filtro-personalizado">
+      <label>Desde:
+        <input type="date" class="date-input" [ngModel]="desde()" (ngModelChange)="desde.set($event)">
+      </label>
+      <label>Hasta:
+        <input type="date" class="date-input" [ngModel]="hasta()" (ngModelChange)="hasta.set($event)">
+      </label>
+      <button class="btn-aplicar" (click)="aplicarPeriodoPersonalizado()" [disabled]="!desde() || !hasta()">
+        <mat-icon>search</mat-icon> Aplicar
+      </button>
+    </div>
+  }
+
+  @if (cargando()) {
+    <div class="cargando">
+      <mat-icon class="spin">sync</mat-icon>
+      Cargando datos...
+    </div>
+  }
+
+  @if (datos() && !cargando()) {
+    <!-- SECCIÓN 1: Métricas destacadas -->
+    <div class="seccion">
+      <div class="metricas-grid">
+        <div class="metrica-card">
+          <div class="metrica-icon"><mat-icon>receipt_long</mat-icon></div>
+          <div class="metrica-valor">{{ formatCLP(datos()!.resumen.total_ventas) }}</div>
+          <div class="metrica-label">Ventas Totales</div>
+        </div>
+        <div class="metrica-card">
+          <div class="metrica-icon"><mat-icon>confirmation_number</mat-icon></div>
+          <div class="metrica-valor">{{ datos()!.resumen.cantidad_ventas }}</div>
+          <div class="metrica-label">N° de Ventas</div>
+        </div>
+        <div class="metrica-card">
+          <div class="metrica-icon"><mat-icon>trending_up</mat-icon></div>
+          <div class="metrica-valor">{{ formatCLP(datos()!.resumen.venta_promedio) }}</div>
+          <div class="metrica-label">Venta Promedio</div>
+        </div>
+        <div class="metrica-card metrica-ganancia">
+          <div class="metrica-icon"><mat-icon>savings</mat-icon></div>
+          <div class="metrica-valor">{{ formatCLP(datos()!.resumen.ganancia) }}</div>
+          <div class="metrica-label">Ganancia</div>
+        </div>
+        <div class="metrica-card">
+          <div class="metrica-icon"><mat-icon>percent</mat-icon></div>
+          <div class="metrica-valor">{{ formatPct(datos()!.resumen.margen_utilidad) }}</div>
+          <div class="metrica-label">Margen Utilidad</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECCIÓN 2: Gráfico principal ventas + ganancia por día -->
+    @if (datos()!.por_dia.length > 0) {
+      <div class="seccion">
+        <div class="seccion-titulo"><mat-icon>bar_chart</mat-icon> Ventas y Ganancia por Día</div>
+        <div class="chart-container chart-alto">
+          <canvas #canvasVG></canvas>
+        </div>
+      </div>
+    }
+
+    <!-- SECCIÓN 3: Dos columnas -->
+    <div class="dos-columnas">
+
+      <!-- COLUMNA IZQUIERDA -->
+      <div class="columna">
+
+        <!-- Métodos de pago por día (stacked) -->
+        @if (datos()!.por_dia.length > 0) {
+          <div class="panel">
+            <div class="panel-titulo"><mat-icon>stacked_bar_chart</mat-icon> Ventas por Forma de Pago</div>
+            <div class="chart-container chart-medio">
+              <canvas #canvasMetodos></canvas>
+            </div>
+            <!-- Lista totales por método -->
+            <div class="metodos-lista">
+              @for (m of metodosList; track m.label) {
+                <div class="metodo-row">
+                  <span class="metodo-dot" [style.background]="m.color"></span>
+                  <span class="metodo-nombre">{{ m.label }}</span>
+                  <span class="metodo-monto">{{ formatCLP(m.valor) }}</span>
+                </div>
+              }
+              @if (metodosList.length === 0) {
+                <div class="sin-datos">No hay ventas en este período</div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Ventas por día: lista -->
+        <div class="panel">
+          <div class="panel-titulo"><mat-icon>calendar_today</mat-icon> Ventas por Día</div>
+          @if (datos()!.por_dia.length > 0) {
+            <input class="filtro-tabla" type="text"
+                   [ngModel]="busquedaDia()" (ngModelChange)="busquedaDia.set($event)"
+                   placeholder="Filtrar...">
+            <table class="mini-tabla">
+              <thead><tr>
+                <th class="sortable" (click)="ordenarDia('dia')">Fecha<span class="sort-icon" [class.activo]="isActive(ordenDia(),'dia')">{{ sortIcon(ordenDia(),'dia') }}</span></th>
+                <th class="sortable" (click)="ordenarDia('cantidad')">Ventas<span class="sort-icon" [class.activo]="isActive(ordenDia(),'cantidad')">{{ sortIcon(ordenDia(),'cantidad') }}</span></th>
+                <th class="sortable" (click)="ordenarDia('total')">Total<span class="sort-icon" [class.activo]="isActive(ordenDia(),'total')">{{ sortIcon(ordenDia(),'total') }}</span></th>
+              </tr></thead>
+              <tbody>
+                @for (dia of diasFiltrados; track dia.dia) {
+                  <tr>
+                    <td>{{ dia.dia | date:'EEE dd/MM' : '' : 'es-CL' }}</td>
+                    <td class="td-num">{{ dia.cantidad }}</td>
+                    <td class="td-num">{{ formatCLP(dia.total) }}</td>
+                  </tr>
+                }
+                @if (diasFiltrados.length === 0) {
+                  <tr><td colspan="3" class="sin-datos">Sin resultados</td></tr>
+                }
+              </tbody>
+            </table>
+          } @else {
+            <div class="sin-datos">No se registró ninguna venta</div>
+          }
+        </div>
+
+      </div><!-- columna izquierda -->
+
+      <!-- COLUMNA DERECHA -->
+      <div class="columna">
+
+        <!-- Ventas por departamento -->
+        <div class="panel">
+          <div class="panel-titulo"><mat-icon>store</mat-icon> Ventas por Departamento</div>
+          @if (categoriasList.length > 0) {
+            <div class="chart-container chart-donut">
+              <canvas #canvasDeptVentas></canvas>
+            </div>
+            <input class="filtro-tabla" type="text"
+                   [ngModel]="busquedaCategoria()" (ngModelChange)="busquedaCategoria.set($event)"
+                   placeholder="Filtrar departamento...">
+            <table class="mini-tabla">
+              <thead><tr>
+                <th class="sortable" (click)="ordenarCategoria('nombre')">Departamento<span class="sort-icon" [class.activo]="isActive(ordenCategoria(),'nombre')">{{ sortIcon(ordenCategoria(),'nombre') }}</span></th>
+                <th class="sortable" (click)="ordenarCategoria('total')">Total<span class="sort-icon" [class.activo]="isActive(ordenCategoria(),'total')">{{ sortIcon(ordenCategoria(),'total') }}</span></th>
+                <th class="sortable" (click)="ordenarCategoria('ganancia')">Ganancia<span class="sort-icon" [class.activo]="isActive(ordenCategoria(),'ganancia')">{{ sortIcon(ordenCategoria(),'ganancia') }}</span></th>
+              </tr></thead>
+              <tbody>
+                @for (cat of categoriasFiltradas; track cat.nombre) {
+                  <tr>
+                    <td>{{ cat.nombre }}</td>
+                    <td class="td-num">{{ formatCLP(cat.total) }}</td>
+                    <td class="td-num ganancia-col">{{ formatCLP(cat.ganancia) }}</td>
+                  </tr>
+                }
+                @if (categoriasFiltradas.length === 0) {
+                  <tr><td colspan="3" class="sin-datos">Sin resultados</td></tr>
+                }
+              </tbody>
+            </table>
+          } @else {
+            <div class="sin-datos">No hay datos de categorías</div>
+          }
+        </div>
+
+        <!-- Ganancia por departamento -->
+        @if (categoriasList.some(c => c.ganancia > 0)) {
+          <div class="panel">
+            <div class="panel-titulo"><mat-icon>savings</mat-icon> Ganancia por Departamento</div>
+            <div class="chart-container chart-donut">
+              <canvas #canvasDeptGanancia></canvas>
+            </div>
+          </div>
+        }
+
+      </div><!-- columna derecha -->
+
+    </div><!-- dos-columnas -->
+  }
+
+  @if (!datos() && !cargando()) {
+    <div class="sin-datos-grande">
+      <mat-icon>bar_chart</mat-icon>
+      <p>Selecciona un período para ver los reportes</p>
+    </div>
+  }
+
+</div>

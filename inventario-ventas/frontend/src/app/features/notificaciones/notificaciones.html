@@ -1,0 +1,53 @@
+<app-navbar></app-navbar>
+
+<div class="notif-page">
+  <div class="notif-header">
+    <div class="header-left">
+      <mat-icon>notifications</mat-icon>
+      <h1>Notificaciones</h1>
+    </div>
+    <div class="header-actions">
+      <select class="select-filtro" [ngModel]="filtroLeida()" (ngModelChange)="filtroLeida.set($event); cargar()">
+        <option value="">Todas</option>
+        <option value="false">No leídas</option>
+        <option value="true">Leídas</option>
+      </select>
+      <button class="btn-refresh" (click)="cargar()"><mat-icon>refresh</mat-icon></button>
+      <button class="btn-todas" (click)="marcarTodas()"><mat-icon>done_all</mat-icon> Marcar todas leídas</button>
+    </div>
+  </div>
+
+  @if (cargando()) {
+    <div class="cargando"><mat-icon class="spin">sync</mat-icon> Cargando...</div>
+  } @else if (notificaciones().length === 0) {
+    <div class="empty">
+      <mat-icon>notifications_none</mat-icon>
+      <p>No hay notificaciones</p>
+    </div>
+  } @else {
+    <div class="lista">
+      @for (n of notificaciones(); track n.id) {
+        <div class="notif-row" [class.no-leida]="!n.leida" (click)="marcarLeida(n)">
+          <div class="notif-icono">
+            <mat-icon>{{ svc.iconoTipo(n.tipo_codigo) }}</mat-icon>
+          </div>
+          <div class="notif-body">
+            <div class="notif-titulo">{{ n.titulo }}</div>
+            <div class="notif-mensaje">{{ n.mensaje }}</div>
+            <div class="notif-meta">
+              <span class="tipo-badge">{{ n.tipo_nombre }}</span>
+              <span class="tiempo">{{ svc.tiempoRelativo(n.creada) }}</span>
+            </div>
+          </div>
+          <div class="notif-estado">
+            @if (!n.leida) {
+              <span class="dot-no-leida"></span>
+            } @else {
+              <mat-icon class="leida-icon">check_circle</mat-icon>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>

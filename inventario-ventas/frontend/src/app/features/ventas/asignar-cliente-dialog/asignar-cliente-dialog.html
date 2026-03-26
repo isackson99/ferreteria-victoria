@@ -1,0 +1,80 @@
+<div class="dialog-wrap">
+
+  <!-- Título -->
+  <div class="dialog-title">
+    <mat-icon>receipt_long</mat-icon>
+    <span>Asignar Cliente Factura</span>
+    <button class="btn-close" (click)="cancelar()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <!-- Buscador -->
+  <div class="dialog-search">
+    <mat-icon class="search-icon">search</mat-icon>
+    <input
+      #searchInput
+      class="search-input"
+      type="text"
+      placeholder="Buscar por nombre o RUT..."
+      [ngModel]="busqueda()"
+      (ngModelChange)="busqueda.set($event)"
+      (keydown)="onKeydown($event)"
+      autocomplete="off">
+  </div>
+
+  <!-- Listbox -->
+  <div class="listbox" #listbox>
+    @if (cargando()) {
+      <div class="listbox-cargando">
+        <mat-spinner diameter="32"></mat-spinner>
+        <span>Cargando clientes...</span>
+      </div>
+    } @else if (clientesFiltrados().length === 0) {
+      <div class="listbox-vacio">
+        <mat-icon>search_off</mat-icon>
+        <span>
+          @if (busqueda()) { Sin resultados para "{{ busqueda() }}" }
+          @else { No hay clientes de factura registrados }
+        </span>
+      </div>
+    } @else {
+      @for (c of clientesFiltrados(); track c.id) {
+        <div
+          class="listbox-row"
+          [class.row-sel]="seleccionado()?.id === c.id"
+          (click)="seleccionado.set(c)">
+          <div class="avatar" [style.background]="avatarInfo(c).color">
+            {{ avatarInfo(c).iniciales }}
+          </div>
+          <div class="row-info">
+            <span class="row-nombre">{{ c.nombre }}</span>
+            <span class="row-rut">{{ c.rut }}</span>
+          </div>
+          @if (seleccionado()?.id === c.id) {
+            <mat-icon class="row-check">check_circle</mat-icon>
+          }
+        </div>
+      }
+    }
+  </div>
+
+  <!-- Footer -->
+  <div class="dialog-footer">
+    <button class="btn-nuevo" (click)="abrirNuevoCliente()">
+      <mat-icon>add</mat-icon>
+      Nuevo Cliente
+    </button>
+    <div class="footer-btns">
+      <button class="btn-cancelar" (click)="cancelar()">Cancelar</button>
+      <button
+        class="btn-asignar"
+        [disabled]="!seleccionado() || cargando()"
+        (click)="confirmar()">
+        <mat-icon>check</mat-icon>
+        Asignar
+      </button>
+    </div>
+  </div>
+
+</div>

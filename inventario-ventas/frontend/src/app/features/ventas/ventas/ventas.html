@@ -1,0 +1,183 @@
+<div class="pos-root">
+
+  <!-- Navbar principal -->
+  <app-navbar></app-navbar>
+
+  <!-- Barra superior: código de barras + botones de acción -->
+  <div class="pos-topbar">
+
+    <!-- Fila 1: input código de barras -->
+    <div class="barcode-row">
+      <mat-icon class="barcode-icon">qr_code_scanner</mat-icon>
+      <input
+        #barcodeInput
+        class="barcode-input"
+        type="text"
+        [(ngModel)]="codigoBarras"
+        placeholder="Ingresa o escanea un Código de Barras"
+        (keydown)="onCodigoKeydown($event)"
+        (keydown.enter)="buscarPorCodigo()"
+        (blur)="onInputBlur()"
+        autocomplete="off"
+        spellcheck="false">
+      @if (buscandoCodigo) {
+        <span class="barcode-buscando">Buscando...</span>
+      }
+    </div>
+
+    <!-- Fila 2: botones de acción -->
+    <div class="actions-row">
+      <button class="action-btn" (click)="abrirArticuloComun()" matTooltip="Insertar artículo común (Ins)">
+        <mat-icon>add_box</mat-icon>
+        <span>INS - Artículo Común</span>
+      </button>
+
+      <button class="action-btn" (click)="abrirBuscador()" matTooltip="Buscar producto por nombre (F10)">
+        <mat-icon>search</mat-icon>
+        <span>F10 Buscar</span>
+      </button>
+
+      <button class="action-btn action-danger" (click)="borrarArticuloSeleccionado()" matTooltip="Borrar artículo seleccionado (Del)">
+        <mat-icon>delete_outline</mat-icon>
+        <span>DEL - Borrar Art.</span>
+      </button>
+
+      <div class="actions-sep"></div>
+
+      <button class="action-btn action-primary" (click)="nuevoTicket()" matTooltip="Crear nuevo ticket">
+        <mat-icon>add_circle_outline</mat-icon>
+        <span>Nuevo Ticket</span>
+      </button>
+
+      @if (tickets().length > 1) {
+        <button class="action-btn action-danger" (click)="eliminarTicketActivo()" matTooltip="Eliminar ticket activo">
+          <mat-icon>remove_circle_outline</mat-icon>
+          <span>Eliminar Ticket</span>
+        </button>
+      }
+
+      <button class="action-btn" [class.action-assigned]="ticketActivo()?.cliente_factura_nombre"
+              (click)="onAsignarClienteFactura()" matTooltip="Asignar cliente factura">
+        <mat-icon>receipt_long</mat-icon>
+        <span>
+          @if (ticketActivo()?.cliente_factura_nombre) {
+            {{ ticketActivo()!.cliente_factura_nombre }}
+          } @else {
+            Asignar Cliente Factura
+          }
+        </span>
+      </button>
+    </div>
+
+  </div>
+
+  <!-- Tabs de tickets abiertos -->
+  <div class="ticket-tabs-bar">
+    @for (ticket of tickets(); track ticket.id; let i = $index) {
+      <button
+        class="ticket-tab"
+        [class.activo]="ticketActivo()?.id === ticket.id"
+        (click)="seleccionarTicket(ticket, i)">
+        <mat-icon class="tab-icon">receipt_long</mat-icon>
+        Ticket {{ ticket.numero_display }}
+        @if (ticket.items.length > 0) {
+          <span class="tab-badge">{{ ticket.items.length }}</span>
+        }
+      </button>
+    }
+    <button class="ticket-tab tab-nuevo" (click)="nuevoTicket()" matTooltip="Nuevo ticket">
+      <mat-icon>add</mat-icon>
+    </button>
+  </div>
+
+  <!-- Área principal: ticket panel ocupa el resto -->
+  <div class="pos-main">
+    @if (ticketActivo()) {
+      <app-ticket-panel
+        [totalTickets]="tickets().length"
+        [productoCache]="productoCache()"
+        (ticketActualizado)="onTicketActualizado($event)"
+        (ticketCompletado)="onTicketCompletado($event)"
+        (accionRealizada)="refocusBarcodeInput()"
+        (sugerirMayoreo)="onSugerirMayoreo($event)">
+      </app-ticket-panel>
+    } @else if (cargando()) {
+      <div class="cargando-state">
+        <mat-icon>hourglass_empty</mat-icon>
+        <p>Cargando tickets...</p>
+      </div>
+    }
+  </div>
+
+  <!-- ===== MODAL: Artículo Común ===== -->
+  @if (mostrarComun()) {
+    <div class="modal-backdrop" (click)="cerrarComun()">
+      <div class="modal-box" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <mat-icon>add_box</mat-icon>
+          <h3>INS - Artículo Común</h3>
+          <button class="modal-close" (click)="cerrarComun()">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-field">
+            <label>Descripción del artículo *</label>
+            <input
+              class="form-input"
+              type="text"
+              [(ngModel)]="comunNombre"
+              placeholder="Ej: Clavo 2 pulgadas"
+              autofocus>
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label>Cantidad</label>
+              <input class="form-input" type="number" [(ngModel)]="comunCantidad" min="0.01" step="1">
+            </div>
+            <div class="form-field">
+              <label>Precio unitario ($) *</label>
+              <input class="form-input" type="number" [(ngModel)]="comunPrecio" min="0" step="1" placeholder="0">
+            </div>
+          </div>
+          @if (comunNombre && comunPrecio > 0) {
+            <div class="comun-preview">
+              <span>Total:</span>
+              <strong>{{ (comunCantidad * comunPrecio) | currency:'CLP':'$':'1.0-0' }}</strong>
+            </div>
+          }
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secundario" (click)="cerrarComun()">Cancelar</button>
+          <button class="btn-primario" (click)="agregarComun()" [disabled]="!comunNombre.trim() || comunPrecio <= 0">
+            <mat-icon>add</mat-icon> Agregar
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ===== MODAL: Buscador de productos ===== -->
+  @if (mostrarBuscador()) {
+    <div class="modal-backdrop" (click)="cerrarBuscador()">
+      <div class="modal-box modal-buscador" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <mat-icon>search</mat-icon>
+          <h3>F10 - Buscar Producto</h3>
+          <button class="modal-close" (click)="cerrarBuscador()">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+        <div class="modal-body modal-body-buscador">
+          <app-producto-search
+            [ticketActivo]="ticketActivo()"
+            (itemAgregado)="onItemAgregadoDesdeModal($event)"
+            (productoAgregado)="onProductoAgregadoDesdeModal($event)"
+            (granelSeleccionado)="onGranelSeleccionadoDesdeModal($event)">
+          </app-producto-search>
+        </div>
+      </div>
+    </div>
+  }
+
+</div>
