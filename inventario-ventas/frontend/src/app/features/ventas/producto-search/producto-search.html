@@ -9,10 +9,9 @@
       type="text"
       [ngModel]="query()"
       (ngModelChange)="onSearch($event)"
-      (keydown)="onKeyDown($event)"
       (focus)="mostrarHint.set(true)"
       (blur)="mostrarHint.set(false)"
-      placeholder="Buscar por nombre, código o categoría..."
+      placeholder="Buscar por nombre..."
       autocomplete="off">
     @if (cargando()) {
       <span class="buscando-txt">Buscando...</span>
@@ -28,23 +27,37 @@
   </div>
 
   <!-- Tabla de resultados -->
-  <div class="resultados-container">
-    @if (resultados().length > 0) {
+  <div class="resultados-container" #resultadosContainer>
+    @if (resultadosOrdenados().length > 0) {
       <table class="resultados-table">
         <thead>
           <tr>
-            <th>Descripción</th>
-            <th>Precio Venta</th>
-            <th>Categoría</th>
-            <th>Inventario</th>
+            <th class="th-sortable" (click)="sortBy('nombre')">
+              Descripción
+              <mat-icon class="sort-icon" [class.sort-active]="sortCol() === 'nombre'">{{ sortIconFor('nombre') }}</mat-icon>
+            </th>
+            <th class="th-sortable" (click)="sortBy('precio_venta')">
+              Precio Venta
+              <mat-icon class="sort-icon" [class.sort-active]="sortCol() === 'precio_venta'">{{ sortIconFor('precio_venta') }}</mat-icon>
+            </th>
+            <th class="th-sortable" (click)="sortBy('categoria_nombre')">
+              Categoría
+              <mat-icon class="sort-icon" [class.sort-active]="sortCol() === 'categoria_nombre'">{{ sortIconFor('categoria_nombre') }}</mat-icon>
+            </th>
+            <th class="th-sortable" (click)="sortBy('inventario_actual')">
+              Inventario
+              <mat-icon class="sort-icon" [class.sort-active]="sortCol() === 'inventario_actual'">{{ sortIconFor('inventario_actual') }}</mat-icon>
+            </th>
           </tr>
         </thead>
         <tbody>
-          @for (producto of resultados(); track producto.id; let i = $index) {
+          @for (producto of resultadosOrdenados(); track producto.id; let i = $index) {
             <tr
-              [class.fila-seleccionada]="filaSeleccionada() === i"
-              (click)="agregarProducto(producto)"
-              (dblclick)="agregarProducto(producto)">
+              [attr.data-row-index]="i"
+              [class.fila-activa]="activeIndex() === i && selectedIndex() !== i"
+              [class.fila-preseleccionada]="selectedIndex() === i"
+              (mousedown)="$event.preventDefault()"
+              (click)="onRowClick(i)">
               <td class="td-nombre">
                 <div class="nombre-cell">
                   <span class="nombre">{{ producto.nombre }}</span>
@@ -87,10 +100,10 @@
   <!-- Hint inferior -->
   <div class="search-hint">
     <span><kbd>↑↓</kbd> navegar</span>
-    <span><kbd>Enter</kbd> agregar</span>
-    <span><kbd>Click</kbd> agregar</span>
-    @if (resultados().length > 0) {
-      <span class="resultados-count">{{ resultados().length }} resultado(s)</span>
+    <span><kbd>Enter</kbd> seleccionar / agregar</span>
+    <span><kbd>Click</kbd> seleccionar · <kbd>2°Click</kbd> agregar</span>
+    @if (resultadosOrdenados().length > 0) {
+      <span class="resultados-count">{{ resultadosOrdenados().length }} resultado(s)</span>
     }
   </div>
 

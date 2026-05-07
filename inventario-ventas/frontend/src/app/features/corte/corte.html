@@ -50,6 +50,12 @@
                 <span>Devoluciones</span>
                 <span class="neg">−{{ formatCLP(resumen()!.total_devoluciones) }}</span>
               </div>
+              @if (resumen()!.total_dev_comunes > 0) {
+                <div class="panel-row">
+                  <span>Dev. artículos comunes</span>
+                  <span class="neg">−{{ formatCLP(resumen()!.total_dev_comunes) }}</span>
+                </div>
+              }
               <div class="panel-sep"></div>
               <div class="panel-row panel-total">
                 <span>TOTAL EN CAJA:</span>
@@ -98,6 +104,9 @@
                 <div class="panel-row"><span>Mixto</span><span class="pos">{{ formatCLP(resumen()!.total_mixto) }}</span></div>
               }
               <div class="panel-row"><span>Devoluciones</span><span class="neg">−{{ formatCLP(resumen()!.total_devoluciones) }}</span></div>
+              @if (resumen()!.total_dev_comunes > 0) {
+                <div class="panel-row"><span>Dev. artículos comunes</span><span class="neg">−{{ formatCLP(resumen()!.total_dev_comunes) }}</span></div>
+              }
               <div class="panel-sep"></div>
               <div class="panel-row panel-total">
                 <span>TOTAL VENTAS:</span>

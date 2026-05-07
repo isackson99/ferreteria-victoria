@@ -23,9 +23,12 @@
         <tbody>
           @for (item of items(); track item.id; let odd = $odd) {
             <tr
-              [class.row-par]="!odd"
-              [class.row-impar]="odd"
+              [attr.data-item-id]="item.id"
+              [class.row-par]="!odd && item.precio_tipo !== 'devolucion'"
+              [class.row-impar]="odd && item.precio_tipo !== 'devolucion'"
               [class.row-seleccionado]="itemSeleccionadoId() === item.id"
+              [class.row-devolucion]="item.precio_tipo === 'devolucion'"
+              [class.fila-sumada]="itemResaltadoId() === item.id"
               (click)="seleccionarItem(item.id)">
 
               <!-- Código -->
@@ -36,8 +39,13 @@
               <!-- Descripción -->
               <td class="col-desc td-desc">
                 <div class="desc-cell">
-                  <span class="desc-nombre">{{ item.producto_nombre }}</span>
+                  <span class="desc-nombre" [class.nombre-devolucion]="item.precio_tipo === 'devolucion'">
+                    {{ item.producto_nombre }}
+                  </span>
                   <div class="desc-badges">
+                    @if (item.precio_tipo === 'devolucion') {
+                      <span class="badge-devolucion">DEVUELTO</span>
+                    }
                     @if (item.precio_tipo === 'mayoreo') {
                       <span class="badge-mayoreo">Mayoreo</span>
                     }
@@ -59,13 +67,15 @@
               </td>
 
               <!-- Precio -->
-              <td class="col-precio td-num">
+              <td class="col-precio td-num" [class.precio-devolucion]="item.precio_tipo === 'devolucion'">
                 {{ item.precio_unitario | currency:'CLP':'$':'1.0-0' }}
               </td>
 
               <!-- Cantidad con +/- -->
               <td class="col-cant td-cant" (click)="$event.stopPropagation()">
-                @if (itemConfirmandoEliminacion() === item.id) {
+                @if (item.precio_tipo === 'devolucion') {
+                  <span class="qty-value cantidad-devolucion">{{ item.cantidad }}</span>
+                } @else if (itemConfirmandoEliminacion() === item.id) {
                   <div class="confirm-delete">
                     <span class="confirm-msg">¿Eliminar?</span>
                     <button class="btn-confirm-si" (click)="confirmarEliminacion(item.id, $event)" [disabled]="cargando()">Sí</button>
@@ -82,7 +92,7 @@
               </td>
 
               <!-- Importe -->
-              <td class="col-importe td-num td-importe">
+              <td class="col-importe td-num td-importe" [class.importe-devolucion]="item.precio_tipo === 'devolucion'">
                 {{ item.subtotal | currency:'CLP':'$':'1.0-0' }}
               </td>
 
@@ -107,6 +117,7 @@
   <!-- Footer del ticket -->
   <div class="ticket-footer">
 
+    <!-- Tiras opcionales (no afectan el layout de la fila principal) -->
     @if (ticket?.cliente_factura_nombre) {
       <div class="cliente-factura-asignado">
         <mat-icon>receipt_long</mat-icon>
@@ -118,41 +129,81 @@
       </div>
     }
 
-    <div class="footer-main">
-      <div class="footer-totales">
-        <div class="total-item">
-          <span class="total-label">Total:</span>
-          <span class="total-valor total-monto">{{ total() | currency:'CLP':'$':'1.0-0' }}</span>
-        </div>
-        <div class="total-sep"></div>
-        <div class="total-item">
-          <span class="total-label">Pagó Con:</span>
-          <span class="total-valor">{{ montoRecibido() | currency:'CLP':'$':'1.0-0' }}</span>
-        </div>
-        <div class="total-sep"></div>
-        <div class="total-item">
-          <span class="total-label">Cambio:</span>
-          <span class="total-valor cambio-valor" [class.cambio-positivo]="vuelto > 0">
-            {{ vuelto | currency:'CLP':'$':'1.0-0' }}
+    @if (ultimaVenta()) {
+      <div class="ultima-venta-bar">
+        <span class="uv-item"><span class="uv-label">Última venta:</span> <span class="uv-val">{{ ultimaVenta()!.total | currency:'CLP':'$':'1.0-0' }}</span></span>
+        <span class="uv-sep">|</span>
+        <span class="uv-item"><span class="uv-label">Pagó con:</span> <span class="uv-val">{{ ultimaVenta()!.pagoCon | currency:'CLP':'$':'1.0-0' }}</span></span>
+        <span class="uv-sep">|</span>
+        <span class="uv-item"><span class="uv-label">Cambio:</span> <span class="uv-val">{{ ultimaVenta()!.cambio | currency:'CLP':'$':'1.0-0' }}</span></span>
+      </div>
+    }
+
+    <!-- FILA ÚNICA: izquierda | centro | derecha -->
+    <div class="footer-row">
+
+      <!-- IZQUIERDA: botones secundarios -->
+      <div class="footer-left">
+        <button class="btn-accion-sec" (click)="reimprimir()">
+          <mat-icon>print</mat-icon>
+          Reimprimir Último Ticket
+        </button>
+        <button class="btn-accion-sec" (click)="ventasDia()">
+          <mat-icon>today</mat-icon>
+          Ventas del día y Devoluciones
+        </button>
+      </div>
+
+      <!-- CENTRO: nuevo ticket + asignar cliente -->
+      <div class="footer-center">
+        <button class="btn-accion-sec" (click)="nuevoTicketSolicitado.emit()">
+          <mat-icon>add_circle_outline</mat-icon>
+          Nuevo Ticket
+        </button>
+        <button class="btn-accion-sec" [class.btn-accion-sec-asignado]="ticket?.cliente_factura_nombre"
+                (click)="asignarClienteFacturaSolicitado.emit()">
+          <mat-icon>receipt_long</mat-icon>
+          @if (ticket?.cliente_factura_nombre) {
+            {{ ticket!.cliente_factura_nombre }}
+          } @else {
+            Asignar Cliente Factura
+          }
+        </button>
+      </div>
+
+      <!-- DERECHA: cobrar + total juntos -->
+      <div class="footer-right">
+        @if (tieneDevolucionesEnCarrito && (totalEsNegativo || totalEsCero)) {
+          <button class="btn-cobrar" (click)="abrirConfirmarDevolucion()" [disabled]="cargando()">
+            <mat-icon>payments</mat-icon>
+            Devolver Efectivo
+          </button>
+        } @else {
+          <button class="btn-cobrar" (click)="abrirCobro()" [disabled]="items().length === 0 || cargando()">
+            <mat-icon>payment</mat-icon>
+            F12 - Cobrar
+          </button>
+        }
+        <div class="total-bloque">
+          <span class="total-lbl">
+            @if (totalEsNegativo) { A devolver: } @else { Total: }
           </span>
+          <span class="total-monto-ppal"
+                [class.total-negativo]="totalEsNegativo"
+                [class.total-cero]="totalEsCero">
+            @if (totalEsNegativo) {
+              ${{ (-total()) | number:'1.0-0' }}
+            } @else {
+              {{ total() | currency:'CLP':'$':'1.0-0' }}
+            }
+          </span>
+          @if (totalEsCero && items().length > 0) {
+            <span class="total-cero-label">Sin cobro</span>
+          }
         </div>
       </div>
 
-    <div class="footer-acciones">
-      <button class="btn-cobrar" (click)="abrirCobro()" [disabled]="items().length === 0 || cargando()">
-        <mat-icon>payment</mat-icon>
-        F12 - Cobrar
-      </button>
-      <button class="btn-accion-sec" (click)="reimprimir()">
-        <mat-icon>print</mat-icon>
-        Reimprimir Último Ticket
-      </button>
-      <button class="btn-accion-sec" (click)="ventasDia()">
-        <mat-icon>today</mat-icon>
-        Ventas del día y Devoluciones
-      </button>
-    </div><!-- footer-acciones -->
-    </div><!-- footer-main -->
+    </div><!-- footer-row -->
   </div><!-- ticket-footer -->
 
   <!-- ===== MODAL: Reimprimir (cliente factura) ===== -->
@@ -332,6 +383,41 @@
           </div>
         </div>
 
+      </div>
+    </div>
+  }
+
+  <!-- ===== MODAL: Confirmar Devolver Efectivo ===== -->
+  @if (mostrarConfirmarDevolucion()) {
+    <div class="modal-backdrop" (click)="cerrarConfirmarDevolucion()">
+      <div class="modal-box modal-box-sm" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <mat-icon>payments</mat-icon>
+          <h3>Confirmar Devolución de Efectivo</h3>
+          <button class="modal-close" (click)="cerrarConfirmarDevolucion()">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p class="devolucion-confirm-msg">
+            ¿Confirmar devolución de
+            <strong>${{ (-total()) | number:'1.0-0' }}</strong> al cliente?
+          </p>
+          <p class="devolucion-confirm-sub">
+            Los productos devueltos volverán al inventario.
+          </p>
+        </div>
+        <div class="modal-footer">
+          <div class="footer-fila-sec">
+            <button class="btn-cerrar-cobro" (click)="cerrarConfirmarDevolucion()">Cancelar</button>
+          </div>
+          <div class="footer-fila-ppal">
+            <button class="btn-devolver-confirm" (click)="confirmarDevolverEfectivo()" [disabled]="cargando()">
+              <mat-icon>check_circle</mat-icon>
+              @if (cargando()) { Procesando... } @else { Confirmar }
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   }

@@ -24,6 +24,7 @@ import {
   DetalleVentaCredito,
 } from '../../core/services/creditos';
 import { ProductosService } from '../../core/services/productos';
+import { AuthService } from '../../core/services/auth';
 import { nextSort, sortArr, sortIcon, isActive, SortState, SORT_NONE } from '../../core/utils/sort';
 
 type Vista = 'estado_cuenta' | 'nuevo_cliente' | 'modificar_cliente' | 'eliminar_cliente' | 'reporte_saldos';
@@ -46,6 +47,11 @@ export class CreditosComponent implements OnInit {
   private impresionService = inject(ImpresionService);
   private productosService = inject(ProductosService);
   private snackBar = inject(MatSnackBar);
+  private authService = inject(AuthService);
+
+  puedeCrearClienteCredito = computed(() =>
+    this.authService.tienePermiso('puede_crear_cliente_credito')
+  );
 
   readonly Number = Number;
   readonly sortIcon = sortIcon;

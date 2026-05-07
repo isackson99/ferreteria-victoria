@@ -218,9 +218,15 @@
           <h3 class="vista-titulo"><mat-icon>list_alt</mat-icon> Catálogo de Productos</h3>
           <div class="catalogo-filtros">
             <mat-form-field appearance="outline" class="filtro-buscar">
-              <mat-label>Buscar</mat-label>
-              <input matInput [(ngModel)]="catalogoBuscador" (input)="filtrarCatalogo()" placeholder="Código o descripción" />
+              <mat-label>Buscar descripción</mat-label>
+              <input matInput [(ngModel)]="catalogoBuscador" (input)="filtrarCatalogo()" placeholder="Nombre del producto" />
               <mat-icon matSuffix>search</mat-icon>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline" class="filtro-buscar">
+              <mat-label>Buscar por código</mat-label>
+              <input matInput [(ngModel)]="catalogoBuscadorCodigo" (input)="filtrarCatalogo()" placeholder="Código de barras" />
+              <mat-icon matSuffix>qr_code</mat-icon>
             </mat-form-field>
 
             <mat-form-field appearance="outline" class="filtro-dept">
@@ -350,28 +356,30 @@
 <ng-template #tplForm>
   <form [formGroup]="form" class="producto-form">
 
-    <!-- Código de barras -->
-    <div class="form-row">
-      <mat-form-field appearance="outline" class="field-codigo">
-        <mat-label>Código de Barras</mat-label>
-        <input matInput formControlName="codigo" placeholder="Ej. 7501234567890" autocomplete="off" />
-        @if (verificandoCodigo()) {
-          <mat-spinner matSuffix diameter="16"></mat-spinner>
+    <!-- Fila 1: Código de Barras + Descripción en 2 columnas -->
+    <div class="form-grid-2col">
+      <div class="grid-col">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="w-full">
+          <mat-label>Código de Barras</mat-label>
+          <input matInput formControlName="codigo" placeholder="Ej. 7501234567890" autocomplete="off" />
+          @if (verificandoCodigo()) {
+            <mat-spinner matSuffix diameter="16"></mat-spinner>
+          }
+          @if (!verificandoCodigo()) {
+            <mat-icon matSuffix>qr_code</mat-icon>
+          }
+        </mat-form-field>
+        @if (codigoExiste()) {
+          <span class="badge-error"><mat-icon>warning</mat-icon> Ya existe este código</span>
         }
-        @if (!verificandoCodigo()) {
-          <mat-icon matSuffix>qr_code</mat-icon>
-        }
-      </mat-form-field>
-      @if (codigoExiste()) {
-        <span class="badge-error"><mat-icon>warning</mat-icon> Ya existe este código</span>
-      }
+      </div>
+      <div class="grid-col">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="w-full">
+          <mat-label>Descripción del Producto</mat-label>
+          <input matInput formControlName="nombre" placeholder="Nombre del producto" />
+        </mat-form-field>
+      </div>
     </div>
-
-    <!-- Descripción -->
-    <mat-form-field appearance="outline" class="field-full">
-      <mat-label>Descripción del Producto</mat-label>
-      <input matInput formControlName="nombre" placeholder="Nombre del producto" />
-    </mat-form-field>
 
     <!-- Tipo de venta -->
     <div class="radio-section">
@@ -383,40 +391,41 @@
       </mat-radio-group>
     </div>
 
-    <!-- Precios -->
+    <!-- Fila 2: Precio Costo / Ganancia / Precio Venta -->
     <div class="form-row">
-      <mat-form-field appearance="outline">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
         <mat-label>Precio Costo</mat-label>
         <span matTextPrefix>$&nbsp;</span>
         <input matInput type="number" step="0.01" min="0" formControlName="precio_costo" (input)="recalcularPrecio()" />
       </mat-form-field>
 
-      <mat-form-field appearance="outline">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
         <mat-label>Ganancia</mat-label>
         <input matInput type="number" step="0.01" formControlName="porcentaje_ganancia" (input)="recalcularPrecio()" />
         <span matTextSuffix>&nbsp;%</span>
       </mat-form-field>
 
-      <mat-form-field appearance="outline">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
         <mat-label>Precio Venta</mat-label>
         <span matTextPrefix>$&nbsp;</span>
         <input matInput type="number" step="0.01" min="0.01" formControlName="precio_venta" (input)="recalcularGanancia()" />
       </mat-form-field>
     </div>
 
+    <!-- Fila 3: Precio Mayoreo / Mínimo Mayoreo / Categoría -->
     <div class="form-row">
-      <mat-form-field appearance="outline">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
         <mat-label>Precio Mayoreo</mat-label>
         <span matTextPrefix>$&nbsp;</span>
         <input matInput type="number" step="0.01" min="0" formControlName="precio_mayoreo" />
       </mat-form-field>
 
-      <mat-form-field appearance="outline">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
         <mat-label>Mínimo Mayoreo</mat-label>
         <input matInput type="number" step="1" min="1" formControlName="mayoreo_minimo" />
       </mat-form-field>
 
-      <mat-form-field appearance="outline">
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
         <mat-label>Categoría / Departamento</mat-label>
         <mat-select formControlName="categoria">
           <mat-option [value]="null">Sin categoría</mat-option>
@@ -496,18 +505,18 @@
 
         @if (form.get('usa_inventario')?.value) {
           <div class="form-row inv-fields">
-            <mat-form-field appearance="outline">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
               <mat-label>Hay</mat-label>
               <input matInput type="number" step="0.001" min="0" formControlName="inventario_actual" />
               <span matTextSuffix>&nbsp;en este momento</span>
             </mat-form-field>
 
-            <mat-form-field appearance="outline">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
               <mat-label>Mínimo</mat-label>
               <input matInput type="number" step="0.001" min="0" formControlName="inventario_minimo" />
             </mat-form-field>
 
-            <mat-form-field appearance="outline">
+            <mat-form-field appearance="outline" subscriptSizing="dynamic">
               <mat-label>Máximo</mat-label>
               <input matInput type="number" step="0.001" min="0" formControlName="inventario_maximo" />
             </mat-form-field>

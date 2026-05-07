@@ -28,12 +28,14 @@ export interface CantidadGranelResult {
           <label>Cantidad del Producto:</label>
           <input
             type="number"
-            step="0.001"
-            min="0.001"
+            step="0.000001"
+            min="0.000001"
             [(ngModel)]="cantidad"
             (ngModelChange)="onCantidadChange($event)"
+            (keydown.enter)="aceptar()"
             (focus)="$event.target.select()"
-            class="campo-input">
+            class="campo-input"
+            cdkFocusInitial>
         </div>
         <div class="campo">
           <label>Importe Actual:</label>
@@ -42,6 +44,7 @@ export interface CantidadGranelResult {
             step="0.01"
             [(ngModel)]="importe"
             (ngModelChange)="onImporteChange($event)"
+            (keydown.enter)="aceptar()"
             (focus)="$event.target.select()"
             class="campo-input">
         </div>
@@ -129,7 +132,7 @@ export class CantidadGranelDialog {
   onImporteChange(val: number): void {
     const imp = Number(val) || 0;
     if (this.precioUnitario > 0) {
-      this.cantidad = Math.round((imp / this.precioUnitario) * 1000) / 1000;
+      this.cantidad = Math.round((imp / this.precioUnitario) * 1000000) / 1000000;
     }
   }
 

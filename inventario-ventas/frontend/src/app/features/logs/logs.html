@@ -1,0 +1,274 @@
+<div class="logs-root">
+  <app-navbar></app-navbar>
+
+  <div class="logs-container">
+
+    <!-- ─── Dashboard ───────────────────────────────────────────────────── -->
+    <div class="dashboard-grid">
+      @if (cargandoResumen()) {
+        @for (i of [1,2,3,4]; track i) { <div class="dash-card dash-skeleton"></div> }
+      } @else if (resumen()) {
+        <div class="dash-card dash-errores">
+          <mat-icon>error_outline</mat-icon>
+          <div class="dash-valor">{{ resumen()!.errores_24h }}</div>
+          <div class="dash-label">Errores últimas 24h</div>
+        </div>
+        <div class="dash-card dash-usuario">
+          <mat-icon>person_outline</mat-icon>
+          <div class="dash-valor">{{ resumen()!.usuario_activo_hoy ?? '—' }}</div>
+          <div class="dash-label">Usuario más activo hoy</div>
+        </div>
+        <div class="dash-card dash-lento">
+          <mat-icon>timer</mat-icon>
+          @if (resumen()!.operacion_lenta_hoy) {
+            <div class="dash-valor">{{ resumen()!.operacion_lenta_hoy!.duracion_ms }} ms</div>
+            <div class="dash-label" [title]="resumen()!.operacion_lenta_hoy!.descripcion">
+              Operación más lenta hoy
+            </div>
+          } @else {
+            <div class="dash-valor">—</div>
+            <div class="dash-label">Sin datos de duración</div>
+          }
+        </div>
+        <div class="dash-card dash-ventas">
+          <mat-icon>point_of_sale</mat-icon>
+          <div class="dash-valor">{{ resumen()!.ventas_hoy }}</div>
+          <div class="dash-label">Ventas cobradas hoy</div>
+        </div>
+      }
+    </div>
+
+    <!-- ─── Cabecera ─────────────────────────────────────────────────────── -->
+    <div class="logs-header">
+      <div class="logs-title">
+        <mat-icon>history</mat-icon>
+        <h2>Logs del Sistema</h2>
+        <span class="total-badge">{{ totalCount() }} registros</span>
+      </div>
+      <div class="logs-actions">
+        <button mat-stroked-button (click)="cargar(); cargarResumen()" [disabled]="cargando()" matTooltip="Refrescar">
+          <mat-icon>refresh</mat-icon> Refrescar
+        </button>
+        <button mat-stroked-button (click)="exportarCSV()" [disabled]="logs().length === 0" matTooltip="Exportar página actual a CSV">
+          <mat-icon>download</mat-icon> Exportar CSV
+        </button>
+      </div>
+    </div>
+
+    <!-- ─── Filtros principales ───────────────────────────────────────── -->
+    <div class="filtros-bar">
+      <mat-form-field appearance="outline" class="filtro-field filtro-sm">
+        <mat-label>Tipo</mat-label>
+        <mat-select [(ngModel)]="filtroTipo">
+          <mat-option value="">Todos</mat-option>
+          @for (t of tiposDisponibles; track t) {
+            <mat-option [value]="t">{{ t }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="filtro-field filtro-sm">
+        <mat-label>Nivel</mat-label>
+        <mat-select [(ngModel)]="filtroNivel">
+          <mat-option value="">Todos</mat-option>
+          @for (n of nivelesDisponibles; track n) {
+            <mat-option [value]="n">{{ n }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="filtro-field filtro-md">
+        <mat-label>Módulo</mat-label>
+        <input matInput [(ngModel)]="filtroModulo" placeholder="ej: ventas">
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="filtro-field filtro-date">
+        <mat-label>Desde</mat-label>
+        <input matInput type="date" [(ngModel)]="filtroFechaIni">
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="filtro-field filtro-date">
+        <mat-label>Hasta</mat-label>
+        <input matInput type="date" [(ngModel)]="filtroFechaFin">
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="filtro-field filtro-search">
+        <mat-label>Buscar</mat-label>
+        <input matInput [(ngModel)]="filtroBusqueda" placeholder="descripción, módulo, detalle..."
+               (keydown.enter)="aplicarFiltros()">
+        <mat-icon matSuffix>search</mat-icon>
+      </mat-form-field>
+
+      <div class="filtro-btns">
+        <button mat-raised-button color="primary" (click)="aplicarFiltros()">
+          <mat-icon>filter_list</mat-icon> Filtrar
+        </button>
+        <button mat-stroked-button (click)="limpiarFiltros()" matTooltip="Limpiar filtros">
+          <mat-icon>clear</mat-icon>
+        </button>
+      </div>
+    </div>
+
+    <!-- ─── Filtros avanzados ─────────────────────────────────────────── -->
+    <div class="filtros-avanzados">
+      <mat-form-field appearance="outline" class="filtro-field filtro-sm">
+        <mat-label>Ticket ID</mat-label>
+        <input matInput [(ngModel)]="filtroTicketId" placeholder="ej: 42"
+               (keydown.enter)="buscarTimeline()">
+        <mat-icon matSuffix>confirmation_number</mat-icon>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="filtro-field filtro-lg">
+        <mat-label>Sesión</mat-label>
+        <input matInput [(ngModel)]="filtroSesion" placeholder="UUID de sesión"
+               (keydown.enter)="aplicarFiltros()">
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="filtro-field filtro-sm">
+        <mat-label>Duración mín. (ms)</mat-label>
+        <input matInput type="number" [(ngModel)]="filtroDuracionMin" placeholder="ej: 500">
+      </mat-form-field>
+
+      <div class="filtro-btns">
+        <button mat-raised-button color="accent" (click)="buscarTimeline()" [disabled]="!filtroTicketId.trim()"
+                matTooltip="Ver línea de tiempo del ticket">
+          <mat-icon>timeline</mat-icon> Ver Timeline
+        </button>
+        <button mat-stroked-button (click)="aplicarFiltros()" matTooltip="Aplicar filtros avanzados">
+          <mat-icon>filter_alt</mat-icon>
+        </button>
+      </div>
+    </div>
+
+    <!-- ─── Spinner ───────────────────────────────────────────────────── -->
+    @if (cargando()) {
+      <div class="spinner-wrap"><mat-spinner diameter="40"></mat-spinner></div>
+    }
+
+    <!-- ─── Timeline de ticket ─────────────────────────────────────────── -->
+    @if (modo() === 'timeline' && !cargando()) {
+      <div class="timeline-header">
+        <mat-icon>timeline</mat-icon>
+        <span>Línea de tiempo — Ticket #{{ filtroTicketId }}</span>
+        <button mat-icon-button (click)="modo.set('lista')" matTooltip="Volver a lista">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      @if (cargandoTimeline()) {
+        <div class="spinner-wrap"><mat-spinner diameter="32"></mat-spinner></div>
+      } @else if (logsTimeline().length === 0) {
+        <div class="empty-state">
+          <mat-icon>search_off</mat-icon>
+          <p>No se encontraron eventos para el ticket #{{ filtroTicketId }}</p>
+        </div>
+      } @else {
+        <div class="timeline-wrap">
+          @for (log of logsTimeline(); track log.id) {
+            <div class="timeline-item" [class]="'tl-nivel-' + log.nivel.toLowerCase()">
+              <div class="tl-dot"></div>
+              <div class="tl-content">
+                <div class="tl-hora">{{ log.timestamp | date:'HH:mm:ss.SSS' }}</div>
+                <div class="tl-desc">
+                  <span class="nivel-badge" [ngClass]="nivelClass(log.nivel)">{{ log.nivel }}</span>
+                  <span class="tipo-badge" [ngClass]="tipoClass(log.tipo)">{{ log.tipo }}</span>
+                  <span class="tl-texto">{{ log.descripcion }}</span>
+                </div>
+                @if (log.datos_extra) {
+                  <pre class="tl-extra">{{ formatDatosExtra(log.datos_extra) }}</pre>
+                }
+                @if (log.duracion_ms) {
+                  <span class="tl-duracion">{{ log.duracion_ms }} ms</span>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      }
+    }
+
+    <!-- ─── Tabla lista ────────────────────────────────────────────────── -->
+    @if (modo() === 'lista' && !cargando()) {
+      @if (logs().length === 0) {
+        <div class="empty-state">
+          <mat-icon>inbox</mat-icon>
+          <p>No hay logs que coincidan con los filtros.</p>
+        </div>
+      } @else {
+        <div class="tabla-wrap">
+          <table class="logs-table">
+            <thead>
+              <tr>
+                <th class="col-hora">Hora</th>
+                <th class="col-nivel">Nivel</th>
+                <th class="col-tipo">Tipo</th>
+                <th class="col-modulo">Módulo</th>
+                <th class="col-usuario">Usuario</th>
+                <th class="col-ticket">Ticket</th>
+                <th class="col-dur">ms</th>
+                <th class="col-desc">Descripción</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (log of logs(); track log.id) {
+                <tr class="log-row"
+                    [class.expandida]="filaExpandida() === log.id"
+                    [class.tiene-detalle]="!!(log.detalle || log.datos_extra)"
+                    (click)="toggleFila(log.id)">
+                  <td class="col-hora">{{ log.timestamp | date:'dd/MM HH:mm:ss' }}</td>
+                  <td class="col-nivel">
+                    <span class="nivel-badge" [ngClass]="nivelClass(log.nivel)">{{ log.nivel }}</span>
+                  </td>
+                  <td class="col-tipo">
+                    <span class="tipo-badge" [ngClass]="tipoClass(log.tipo)">{{ log.tipo }}</span>
+                  </td>
+                  <td class="col-modulo">{{ log.modulo }}</td>
+                  <td class="col-usuario">{{ log.usuario_nombre || '—' }}</td>
+                  <td class="col-ticket">
+                    @if (log.ticket_id) {
+                      <button class="ticket-link" (click)="$event.stopPropagation(); filtroTicketId = log.ticket_id!.toString(); buscarTimeline()"
+                              matTooltip="Ver timeline del ticket">
+                        #{{ log.ticket_id }}
+                      </button>
+                    } @else { — }
+                  </td>
+                  <td class="col-dur">{{ log.duracion_ms ?? '' }}</td>
+                  <td class="col-desc">
+                    <span>{{ log.descripcion }}</span>
+                    @if (log.detalle || log.datos_extra) {
+                      <mat-icon class="expand-icon" [class.rotado]="filaExpandida() === log.id">expand_more</mat-icon>
+                    }
+                  </td>
+                </tr>
+                @if (filaExpandida() === log.id && (log.detalle || log.datos_extra)) {
+                  <tr class="detalle-row">
+                    <td colspan="8">
+                      @if (log.detalle) {
+                        <pre class="detalle-pre">{{ log.detalle }}</pre>
+                      }
+                      @if (log.datos_extra) {
+                        <pre class="detalle-pre detalle-json">{{ formatDatosExtra(log.datos_extra) }}</pre>
+                      }
+                    </td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Paginación -->
+        <div class="paginacion">
+          <button mat-icon-button (click)="paginaAnterior()" [disabled]="paginaActual() <= 1">
+            <mat-icon>chevron_left</mat-icon>
+          </button>
+          <span class="pag-info">Página {{ paginaActual() }} de {{ totalPaginas() }}</span>
+          <button mat-icon-button (click)="paginaSiguiente()" [disabled]="paginaActual() >= totalPaginas()">
+            <mat-icon>chevron_right</mat-icon>
+          </button>
+        </div>
+      }
+    }
+
+  </div>
+</div>

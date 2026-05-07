@@ -25,8 +25,8 @@ export class NavbarComponent implements OnInit, OnDestroy {
   panelAbierto = signal(false);
 
   get navItems() {
-    const u = this.authService.usuarioActual();
-    const esAdmin = u && (u.is_superuser || u.rol?.nombre === 'Admin');
+    const user = this.authService.usuarioActual();
+    const esAdmin = user && (user.is_superuser || user.rol?.nombre?.toLowerCase() === 'admin');
     const items = [
       { label: 'Ventas',        ruta: '/ventas',        icono: 'point_of_sale' },
       { label: 'Créditos',      ruta: '/creditos',      icono: 'credit_card' },
@@ -36,10 +36,8 @@ export class NavbarComponent implements OnInit, OnDestroy {
       { label: 'Configuración', ruta: '/configuracion', icono: 'settings' },
       { label: 'Reportes',      ruta: '/reportes',      icono: 'bar_chart' },
       { label: 'Corte',         ruta: '/corte',         icono: 'calculate' },
+      ...(esAdmin ? [{ label: 'Logs', ruta: '/logs', icono: 'history' }] : []),
     ];
-    if (esAdmin) {
-      items.push({ label: 'Usuarios', ruta: '/usuarios', icono: 'manage_accounts' });
-    }
     return items;
   }
 

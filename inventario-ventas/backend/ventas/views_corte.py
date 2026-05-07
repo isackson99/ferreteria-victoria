@@ -1,8 +1,21 @@
+import threading
+import logging
 from django.db.models import Sum, Count
 from django.utils import timezone
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import permissions, status
+
+logger = logging.getLogger(__name__)
+
+
+def _backup_async(motivo: str):
+    try:
+        from django.core import management
+        management.call_command('dbbackup', verbosity=0)
+        logger.info(f'Backup automático completado: {motivo}')
+    except Exception as e:
+        logger.error(f'Error en backup automático ({motivo}): {e}')
 
 
 class ResumenCorteView(APIView):
@@ -64,14 +77,23 @@ class ResumenCorteView(APIView):
                 'fecha': ab.fecha,
             })
 
-        # Cancellations/returns
-        dev_qs = Venta.objects.filter(usuario=usuario, estado='cancelada')
-        if desde:
-            dev_qs = dev_qs.filter(creada__gt=desde)
-        total_devoluciones = dev_qs.aggregate(t=Sum('total'))['t'] or 0
+        # Returns: sum absolute value of devolucion-type items in completed ventas
+        from ventas.models import DetalleVenta
+        dev_items = DetalleVenta.objects.filter(
+            venta__in=ventas_qs,
+            precio_tipo='devolucion',
+        )
+        total_devoluciones = -float(dev_items.aggregate(t=Sum('subtotal'))['t'] or 0)
+
+        # Returns via common articles (negative quantity, precio_tipo='comun')
+        dev_comunes_items = DetalleVenta.objects.filter(
+            venta__in=ventas_qs,
+            es_producto_comun=True,
+            cantidad__lt=0,
+        )
+        total_dev_comunes = -float(dev_comunes_items.aggregate(t=Sum('subtotal'))['t'] or 0)
 
         # Sales by department
-        from ventas.models import DetalleVenta
         items_turno = DetalleVenta.objects.filter(venta__in=ventas_qs).select_related('producto__categoria')
         ventas_dept = {}
         for item in items_turno:
@@ -106,6 +128,7 @@ class ResumenCorteView(APIView):
             'total_salidas': total_salidas,
             'total_abonos_credito': total_abonos,
             'total_devoluciones': total_devoluciones,
+            'total_dev_comunes': total_dev_comunes,
             'ventas_por_departamento': ventas_dept,
             'clientes_top': clientes_top,
             'efectivo_en_caja': efectivo_en_caja,
@@ -152,10 +175,12 @@ class ConfirmarCorteView(APIView):
             abonos_qs = abonos_qs.filter(fecha__gt=desde)
         total_abonos = abonos_qs.aggregate(t=Sum('monto'))['t'] or 0
 
-        dev_qs = Venta.objects.filter(usuario=usuario, estado='cancelada')
-        if desde:
-            dev_qs = dev_qs.filter(creada__gt=desde)
-        total_devoluciones = dev_qs.aggregate(t=Sum('total'))['t'] or 0
+        from ventas.models import DetalleVenta
+        dev_items = DetalleVenta.objects.filter(
+            venta__in=ventas_qs,
+            precio_tipo='devolucion',
+        )
+        total_devoluciones = -float(dev_items.aggregate(t=Sum('subtotal'))['t'] or 0)
 
         total_ventas = float(total_efectivo) + float(total_tarjeta) + float(total_credito) + float(total_mixto)
 
@@ -175,6 +200,36 @@ class ConfirmarCorteView(APIView):
             notas=notas,
         )
 
+        thread = threading.Thread(
+            target=_backup_async,
+            args=(f'corte de turno #{corte.id} — {usuario.username}',),
+            daemon=True,
+        )
+        thread.start()
+
+        try:
+            from logs.views import log_evento
+            log_evento(
+                request, 'CAJA', 'corte',
+                f'Corte #{corte.id} — efectivo ${float(total_efectivo):,.0f} | '
+                f'tarjeta ${float(total_tarjeta):,.0f} | tickets {tickets.count()} | '
+                f'total ${float(total_ventas):,.0f}',
+                nivel='INFO',
+                datos_extra={
+                    'corte_id': corte.id,
+                    'total_efectivo': float(total_efectivo),
+                    'total_tarjeta': float(total_tarjeta),
+                    'total_credito': float(total_credito),
+                    'total_mixto': float(total_mixto),
+                    'total_ventas': float(total_ventas),
+                    'cantidad_tickets': tickets.count(),
+                    'total_entradas': float(total_entradas),
+                    'total_salidas': float(total_salidas),
+                },
+            )
+        except Exception:
+            pass
+
         return Response({'mensaje': 'Corte realizado', 'corte_id': corte.id}, status=status.HTTP_201_CREATED)
 
 
@@ -185,7 +240,7 @@ class HistorialCortesView(APIView):
         from ventas.models import CorteCaja
         usuario = request.user
         # Superusers/admins see all, others see only their own
-        if usuario.is_superuser or (hasattr(usuario, 'rol') and usuario.rol and usuario.rol.nombre == 'Admin'):
+        if usuario.is_superuser or (hasattr(usuario, 'rol') and usuario.rol and usuario.rol.nombre.lower() == 'admin'):
             cortes = CorteCaja.objects.all().select_related('usuario')
         else:
             cortes = CorteCaja.objects.filter(usuario=usuario).select_related('usuario')

@@ -17,6 +17,9 @@ class Command(BaseCommand):
             ('puede_crear_usuarios', 'Puede crear y editar usuarios'),
             ('puede_ver_reportes', 'Puede ver reportes y cierre de caja'),
             ('puede_cancelar_ventas', 'Puede cancelar ventas'),
+            ('puede_crear_cliente_credito', 'Puede crear y editar clientes de crédito'),
+            ('puede_crear_cliente_factura', 'Puede crear y editar clientes de factura'),
+            ('puede_crear_usuario_plataforma', 'Puede crear y editar usuarios de la plataforma'),
         ]
 
         permisos = {}
@@ -34,6 +37,16 @@ class Command(BaseCommand):
                 permisos['puede_ver_creditos'],
                 permisos['puede_ver_reportes'],
                 permisos['puede_cancelar_ventas'],
+                permisos['puede_crear_cliente_factura'],
+            ],
+            'Cajero': [
+                permisos['puede_vender'],
+                permisos['puede_ver_inventario'],
+                permisos['puede_abonar'],
+                permisos['puede_ver_creditos'],
+                permisos['puede_ver_reportes'],
+                permisos['puede_cancelar_ventas'],
+                permisos['puede_crear_cliente_factura'],
             ],
             'Bodeguero': [
                 permisos['puede_ver_inventario'],

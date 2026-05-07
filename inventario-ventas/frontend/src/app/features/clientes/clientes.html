@@ -77,9 +77,18 @@
 
     <!-- Header acciones -->
     <div class="form-header">
-      <button class="btn-accion btn-nuevo" (click)="nuevoCliente()">
-        <mat-icon>person_add</mat-icon>
-        Nuevo Cliente
+      @if (puedeCrearClienteFactura()) {
+        <button class="btn-accion btn-nuevo" (click)="nuevoCliente()">
+          <mat-icon>person_add</mat-icon>
+          Nuevo Cliente
+        </button>
+      }
+
+      <input #fileInputImport type="file" accept=".xlsx,.csv" style="display:none"
+        (change)="onImportarExcel($event)">
+      <button class="btn-accion btn-importar" (click)="fileInputImport.click()">
+        <mat-icon>upload_file</mat-icon>
+        Importar Excel
       </button>
       @if (seleccionado()) {
         <button class="btn-accion btn-eliminar" (click)="solicitarEliminar()">

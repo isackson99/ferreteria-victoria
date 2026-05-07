@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Venta, DetalleVenta, Ticket, PagoTicket
+from .models import Venta, DetalleVenta, Ticket, PagoTicket, Cotizacion, CotizacionItem
 from productos.serializers import ProductoSerializer
 
 
@@ -63,7 +63,7 @@ class DetalleVentaSerializer(serializers.ModelSerializer):
 
 class AgregarItemSerializer(serializers.Serializer):
     producto_id = serializers.IntegerField()
-    cantidad = serializers.DecimalField(max_digits=10, decimal_places=3)
+    cantidad = serializers.DecimalField(max_digits=12, decimal_places=6)
     usar_precio_mayoreo = serializers.BooleanField(default=False)
 
 
@@ -128,3 +128,33 @@ class ConfirmarVentaSerializer(serializers.Serializer):
     monto_recibido = serializers.DecimalField(max_digits=12, decimal_places=2, required=False, default=0)
     monto_tarjeta = serializers.DecimalField(max_digits=12, decimal_places=2, required=False, default=0)
     cliente_credito_id = serializers.IntegerField(required=False, allow_null=True)
+
+
+class CotizacionItemSerializer(serializers.ModelSerializer):
+    producto_nombre = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CotizacionItem
+        fields = ['id', 'producto', 'producto_nombre', 'es_producto_comun',
+                  'producto_comun_nombre', 'cantidad', 'precio_unitario', 'subtotal']
+
+    def get_producto_nombre(self, obj):
+        if obj.es_producto_comun:
+            return obj.producto_comun_nombre
+        return obj.producto.nombre if obj.producto else ''
+
+
+class CotizacionSerializer(serializers.ModelSerializer):
+    items = CotizacionItemSerializer(many=True, read_only=True)
+    total = serializers.SerializerMethodField()
+    cantidad_items = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Cotizacion
+        fields = ['id', 'numero', 'estado', 'notas', 'creada', 'items', 'total', 'cantidad_items']
+
+    def get_total(self, obj):
+        return float(sum(item.subtotal for item in obj.items.all()))
+
+    def get_cantidad_items(self, obj):
+        return obj.items.count()

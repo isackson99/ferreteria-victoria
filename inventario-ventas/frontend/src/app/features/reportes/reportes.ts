@@ -47,7 +47,7 @@ export class ReportesComponent implements OnInit, OnDestroy {
 
   isAdmin = computed(() => {
     const u = this.authService.usuarioActual();
-    return !!u && (u.is_superuser || u.rol?.nombre === 'Admin');
+    return !!u && (u.is_superuser || u.rol?.nombre?.toLowerCase() === 'admin');
   });
 
   // Chart instances

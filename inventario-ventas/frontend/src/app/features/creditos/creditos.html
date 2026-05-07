@@ -7,8 +7,10 @@
     <div class="cred-nav-left">
       <button class="cred-nav-btn" [class.active]="vista() === 'estado_cuenta'"
               (click)="setVista('estado_cuenta')">Estado de Cuenta</button>
-      <button class="cred-nav-btn" [class.active]="vista() === 'nuevo_cliente'"
-              (click)="setVista('nuevo_cliente')">Nuevo Cliente</button>
+      @if (puedeCrearClienteCredito()) {
+        <button class="cred-nav-btn" [class.active]="vista() === 'nuevo_cliente'"
+                (click)="setVista('nuevo_cliente')">Nuevo Cliente</button>
+      }
       <button class="cred-nav-btn" [class.active]="vista() === 'modificar_cliente'"
               (click)="setVista('modificar_cliente')">Modificar Cliente</button>
       <button class="cred-nav-btn" [class.active]="vista() === 'eliminar_cliente'"
@@ -178,7 +180,13 @@
                         @if (v.liquidado) {
                           <span class="badge-liquidado">✓ Liquidado</span>
                         }
-                        <span class="venta-total">$ {{ v.total | number:'1.0-0' }}</span>
+                        @if (clienteActual()?.precio_especial) {
+                          <span class="venta-total venta-total-especial">
+                            ★ $ {{ totalEspecialVenta(v) | number:'1.0-0' }}
+                          </span>
+                        } @else {
+                          <span class="venta-total">$ {{ v.total | number:'1.0-0' }}</span>
+                        }
                       </div>
                     }
                   </div>

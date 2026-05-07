@@ -25,9 +25,12 @@ def descontar_inventario_al_completar(sender, instance, **kwargs):
                 continue
 
             producto = item.producto
+            es_devolucion = item.precio_tipo == 'devolucion'
+            cantidad_abs = abs(item.cantidad)
+            tipo_mov = 'devolucion' if es_devolucion else 'venta'
 
-            if producto.tipo == 'kit':
-                componentes = producto.kit.obtener_componentes_simples(item.cantidad)
+            if producto.tipo == 'kit' and not es_devolucion:
+                componentes = producto.kit.obtener_componentes_simples(cantidad_abs)
                 for data in componentes.values():
                     p = data['producto']
                     stock_antes = p.inventario_actual
@@ -47,39 +50,24 @@ def descontar_inventario_al_completar(sender, instance, **kwargs):
                     crear_notificacion_stock(p)
             else:
                 stock_antes = producto.inventario_actual
+                # cantidad negativa (devolucion) suma al inventario; positiva lo resta
                 producto.inventario_actual -= item.cantidad
                 producto.save()
+                motivo = (
+                    f'Devolución en ticket #{instance.id}'
+                    if es_devolucion
+                    else f'Venta #{instance.id}'
+                )
                 MovimientoInventario.objects.create(
                     producto=producto,
-                    tipo='venta',
-                    cantidad=item.cantidad,
+                    tipo=tipo_mov,
+                    cantidad=cantidad_abs,
                     stock_antes=stock_antes,
                     stock_despues=producto.inventario_actual,
-                    motivo=f'Venta #{instance.id}',
+                    motivo=motivo,
                     usuario=instance.usuario,
                     referencia_venta=instance,
                 )
                 notificar_stock_actualizado(producto)
                 crear_notificacion_stock(producto)
 
-    if venta_anterior.estado == 'pendiente' and instance.estado == 'cancelada':
-        from notificaciones.models import Notificacion, TipoNotificacion, ConfiguracionNotificacion
-
-        try:
-            tipo = TipoNotificacion.objects.get(codigo='venta_cancelada')
-        except TipoNotificacion.DoesNotExist:
-            return
-
-        roles_activos = ConfiguracionNotificacion.objects.filter(
-            tipo=tipo, activa=True
-        ).select_related('rol')
-
-        for config in roles_activos:
-            Notificacion.objects.create(
-                tipo=tipo,
-                titulo=f'Venta cancelada — #{instance.id}',
-                mensaje=f'La venta #{instance.id} fue cancelada por {instance.usuario}. Total: ${instance.total:,.0f}.',
-                destinatario_rol=config.rol,
-                referencia_id=instance.id,
-                referencia_tipo='venta',
-            )

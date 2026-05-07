@@ -1,8 +1,44 @@
 import logging
+from datetime import datetime, timedelta
+from pathlib import Path
 from django.utils import timezone
-from datetime import timedelta
 
 logger = logging.getLogger(__name__)
+
+
+def backup_diario():
+    from django.core import management
+    try:
+        management.call_command('dbbackup', verbosity=0)
+        logger.info('✅ Backup diario completado')
+    except Exception as e:
+        logger.error(f'Error en backup diario: {e}')
+
+
+def limpiar_backups():
+    from django.conf import settings
+
+    backup_dir = Path(settings.BASE_DIR) / 'backups'
+    if not backup_dir.exists():
+        return
+
+    MANTENER = 30  # siempre conservar los últimos 30 backups
+
+    archivos = sorted(
+        [f for f in backup_dir.glob('*') if f.is_file()],
+        key=lambda f: f.stat().st_mtime,
+        reverse=True,  # más reciente primero
+    )
+
+    eliminados = 0
+
+    # Eliminar todo lo que exceda los últimos 30
+    for archivo in archivos[MANTENER:]:
+        archivo.unlink()
+        eliminados += 1
+        logger.info(f'Backup eliminado por exceder límite de {MANTENER}: {archivo.name}')
+
+    logger.info(f'✅ Limpieza de backups: {eliminados} archivo(s) eliminado(s). Se conservan {min(len(archivos), MANTENER)}.')
 
 
 def verificar_creditos_por_vencer():

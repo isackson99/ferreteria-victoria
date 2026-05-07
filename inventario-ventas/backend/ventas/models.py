@@ -10,6 +10,7 @@ class Venta(models.Model):
         ('pendiente', 'Pendiente'),
         ('completada', 'Completada'),
         ('cancelada', 'Cancelada'),
+        ('clausurada', 'Clausurada'),
     ]
 
     usuario = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, related_name='ventas')
@@ -47,6 +48,8 @@ class DetalleVenta(models.Model):
         ('mayoreo', 'Mayoreo'),
         ('kit', 'Kit'),
         ('comun', 'Producto Común'),
+        ('devolucion', 'Devolución'),
+        ('descuento', 'Descuento'),
     ]
 
     venta = models.ForeignKey(Venta, on_delete=models.CASCADE, related_name='items')
@@ -59,7 +62,7 @@ class DetalleVenta(models.Model):
     )
     producto_comun_nombre = models.CharField(max_length=200, blank=True, default='')
     es_producto_comun = models.BooleanField(default=False)
-    cantidad = models.DecimalField(max_digits=10, decimal_places=3)
+    cantidad = models.DecimalField(max_digits=12, decimal_places=6)
     precio_unitario = models.DecimalField(max_digits=12, decimal_places=2)
     precio_tipo = models.CharField(max_length=10, choices=PRECIO_TIPO_CHOICES, default='normal')
     subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0)
@@ -78,6 +81,7 @@ class DetalleVenta(models.Model):
 
     class Meta:
         verbose_name_plural = "Detalles de Venta"
+        ordering = ['id']
 
 
 class Ticket(models.Model):
@@ -180,3 +184,44 @@ class CorteCaja(models.Model):
 
     def __str__(self):
         return f"Corte #{self.id} — {self.usuario} — {self.fecha_corte}"
+
+
+class Cotizacion(models.Model):
+    ESTADO_CHOICES = [
+        ('activa', 'Activa'),
+        ('usada', 'Usada'),
+        ('eliminada', 'Eliminada'),
+    ]
+
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='cotizaciones')
+    numero = models.CharField(max_length=30, unique=True)
+    estado = models.CharField(max_length=20, choices=ESTADO_CHOICES, default='activa')
+    notas = models.TextField(blank=True)
+    creada = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Cotización {self.numero}"
+
+    class Meta:
+        ordering = ['-creada']
+        verbose_name_plural = "Cotizaciones"
+
+
+class CotizacionItem(models.Model):
+    cotizacion = models.ForeignKey(Cotizacion, on_delete=models.CASCADE, related_name='items')
+    producto = models.ForeignKey(Producto, on_delete=models.PROTECT, null=True, blank=True)
+    es_producto_comun = models.BooleanField(default=False)
+    producto_comun_nombre = models.CharField(max_length=200, blank=True)
+    cantidad = models.DecimalField(max_digits=12, decimal_places=6)
+    precio_unitario = models.DecimalField(max_digits=12, decimal_places=2)
+    subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+
+    def save(self, *args, **kwargs):
+        self.subtotal = self.cantidad * self.precio_unitario
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f'{self.cantidad}x en {self.cotizacion.numero}'
+
+    class Meta:
+        verbose_name_plural = "Items de Cotización"

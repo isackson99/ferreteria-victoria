@@ -16,6 +16,7 @@ export interface ResumenCorte {
   total_salidas: number;
   total_abonos_credito: number;
   total_devoluciones: number;
+  total_dev_comunes: number;
   ventas_por_departamento: Record<string, number>;
   clientes_top: { cliente_credito__nombre: string; total: number; compras: number }[];
   efectivo_en_caja: number;

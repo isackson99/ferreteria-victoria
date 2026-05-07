@@ -1,0 +1,248 @@
+<div class="vdd-root">
+
+  <!-- ── Header ─────────────────────────────────────────────────────────────── -->
+  <div class="vdd-header">
+    <mat-icon>today</mat-icon>
+    <h2>Ventas del Día y Devoluciones</h2>
+    <button class="vdd-close" (click)="cerrar()"><mat-icon>close</mat-icon></button>
+  </div>
+
+  <!-- ── Body: dos paneles ──────────────────────────────────────────────────── -->
+  <div class="vdd-body">
+
+    <!-- ═══════════ PANEL IZQUIERDO: lista ═══════════ -->
+    <div class="vdd-left">
+      <div class="vdd-left-title">VENTAS DEL DÍA</div>
+
+      <!-- Filtros -->
+      <div class="vdd-filtros">
+        <div class="vdd-filtro-row">
+          <label>Del día:</label>
+          <input type="date" class="vdd-input-date" [(ngModel)]="fechaFiltro" (change)="cargarVentas()">
+        </div>
+
+        @if (isAdmin()) {
+          <div class="vdd-filtro-row">
+            <label>Cajero:</label>
+            <select class="vdd-select" [(ngModel)]="cajeroFiltro" (change)="cargarVentas()">
+              <option value="">Todos</option>
+              @for (c of cajerosDisponibles(); track c.id) {
+                <option [value]="c.id">{{ c.nombre }}</option>
+              }
+            </select>
+          </div>
+        }
+
+        <div class="vdd-filtro-row">
+          <label>Folio:</label>
+          <input class="vdd-input-text" type="text" [(ngModel)]="folioFiltro" placeholder="Buscar folio...">
+        </div>
+      </div>
+
+      <!-- Tabla de ventas -->
+      @if (cargando()) {
+        <div class="vdd-cargando"><mat-spinner diameter="28"></mat-spinner><span>Cargando...</span></div>
+      } @else if (ventasFiltradas().length === 0) {
+        <div class="vdd-empty-list">
+          <mat-icon>receipt_long</mat-icon>
+          <p>Sin ventas para esta fecha</p>
+        </div>
+      } @else {
+        <div class="vdd-tabla-scroll">
+          <table class="vdd-tabla">
+            <thead>
+              <tr>
+                <th>Folio</th>
+                <th class="th-c">Arts.</th>
+                <th class="th-c">Hora</th>
+                <th class="th-r">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (v of ventasFiltradas(); track v.id) {
+                <tr
+                  [class.vdd-fila-sel]="ventaSeleccionada()?.id === v.id"
+                  [class.vdd-fila-clausurada]="v.estado === 'clausurada'"
+                  (click)="seleccionarVenta(v)">
+                  <td>
+                    <span class="vdd-folio">{{ v.folio }}</span>
+                    @if (v.estado === 'clausurada') {
+                      <span class="badge-clausurada">Clausurada</span>
+                    }
+                  </td>
+                  <td class="td-c">{{ v.items.length }}</td>
+                  <td class="td-c">{{ horaCorta(v.completada) }}</td>
+                  <td class="td-r">${{ v.total | number:'1.0-0' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+
+      <div class="vdd-left-footer">
+        <span class="vdd-total-count">{{ ventasFiltradas().length }} venta(s)</span>
+        <button class="vdd-btn-cerrar" (click)="cerrar()">
+          <mat-icon>check</mat-icon> Cerrar Ventana
+        </button>
+      </div>
+    </div>
+
+    <!-- ═══════════ PANEL DERECHO: detalle ═══════════ -->
+    <div class="vdd-right">
+      @if (!ventaSeleccionada()) {
+        <div class="vdd-right-empty">
+          <mat-icon>point_of_sale</mat-icon>
+          <p>Selecciona una venta de la lista</p>
+        </div>
+      } @else {
+        <!-- Cabecera ticket -->
+        <div class="vdd-right-header">
+          <div class="vdd-ticket-titulo">
+            <mat-icon>receipt</mat-icon>
+            <h3>Ticket {{ ventaSeleccionada()!.folio }}</h3>
+            @if (ventaSeleccionada()!.estado === 'clausurada') {
+              <span class="badge-clausurada badge-lg">Clausurada</span>
+            }
+          </div>
+          <div class="vdd-ticket-info">
+            <span><mat-icon>person</mat-icon> {{ ventaSeleccionada()!.cajero }}</span>
+            <span><mat-icon>people</mat-icon> {{ ventaSeleccionada()!.cliente }}</span>
+            <span><mat-icon>access_time</mat-icon> {{ horaCorta(ventaSeleccionada()!.completada) }}</span>
+          </div>
+        </div>
+
+        <!-- Tabla de ítems -->
+        <div class="vdd-items-scroll">
+          <table class="vdd-items-tabla">
+            <thead>
+              <tr>
+                <th class="th-cant">Cant.</th>
+                <th>Descripción</th>
+                <th class="th-r">Importe</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of ventaSeleccionada()!.items; track item.id) {
+                <tr
+                  [class.vdd-item-sel]="itemSeleccionadoId() === item.id"
+                  [class.vdd-item-comun]="item.es_producto_comun"
+                  (click)="seleccionarItem(item.id)">
+                  <td class="td-cant">{{ item.cantidad }}</td>
+                  <td>
+                    {{ item.nombre }}
+                    @if (item.precio_tipo === 'mayoreo') {
+                      <span class="badge-mayoreo">Mayoreo</span>
+                    }
+                    @if (item.es_producto_comun) {
+                      <span class="badge-comun">Común</span>
+                    }
+                  </td>
+                  <td class="td-r">${{ item.subtotal | number:'1.0-0' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Botones de acción -->
+        <div class="vdd-acciones">
+          @if (itemSeleccionadoId() !== null && ventaSeleccionada()!.estado === 'completada') {
+            <button class="vdd-btn vdd-btn-devolver" (click)="abrirDevolverItem()" [disabled]="cargandoAccion()">
+              <mat-icon>undo</mat-icon> Devolver artículo seleccionado
+            </button>
+          }
+          @if (ventaSeleccionada()!.estado === 'completada') {
+            <button class="vdd-btn vdd-btn-clausurar" (click)="abrirClausurar()" [disabled]="cargandoAccion()">
+              <mat-icon>block</mat-icon> Cancelar Venta
+            </button>
+          }
+          <button class="vdd-btn vdd-btn-print" (click)="imprimirCopia()">
+            <mat-icon>print</mat-icon> Imprimir copia
+          </button>
+        </div>
+
+        <!-- Footer totales -->
+        <div class="vdd-right-footer">
+          <div class="vdd-total-row">
+            <span class="vdd-total-label">Total:</span>
+            <span class="vdd-total-valor">${{ ventaSeleccionada()!.total | number:'1.0-0' }}</span>
+          </div>
+          @for (pago of ventaSeleccionada()!.pagos; track pago.metodo) {
+            <div class="vdd-pago-row">
+              <mat-icon class="pago-icon">{{ metodoIcon(pago.metodo) }}</mat-icon>
+              <span>Pagó: <strong>${{ pago.monto_recibido | number:'1.0-0' }}</strong></span>
+              <span class="pago-metodo">{{ pago.metodo_display }}</span>
+              @if (pago.vuelto > 0) {
+                <span class="pago-vuelto">Cambio: ${{ pago.vuelto | number:'1.0-0' }}</span>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+  </div><!-- /vdd-body -->
+
+  <!-- ══════════════ SUB-MODAL: Devolver ítem ══════════════ -->
+  @if (mostrarDevolverItem()) {
+    <div class="vdd-submodal-backdrop" (click)="mostrarDevolverItem.set(false)">
+      <div class="vdd-submodal" (click)="$event.stopPropagation()">
+        <div class="vdd-submodal-header">
+          <mat-icon>undo</mat-icon>
+          <h4>Devolver: {{ itemParaDevolver?.nombre }}</h4>
+        </div>
+        <div class="vdd-submodal-body">
+          <p class="vdd-sub-info">Cantidad comprada: <strong>{{ itemParaDevolver?.cantidad }}</strong></p>
+          <div class="vdd-qty-row">
+            <button class="vdd-qty-btn" (click)="ajustarCantidad(-1)" [disabled]="cantidadDevolver <= 1">−</button>
+            <input
+              class="vdd-qty-input"
+              type="number"
+              [(ngModel)]="cantidadDevolver"
+              [min]="1"
+              [max]="itemParaDevolver?.cantidad ?? null">
+            <button class="vdd-qty-btn" (click)="ajustarCantidad(1)" [disabled]="cantidadDevolver >= (itemParaDevolver?.cantidad ?? 1)">+</button>
+          </div>
+          @if (itemParaDevolver) {
+            <p class="vdd-sub-subtotal">
+              Monto a devolver:
+              <strong>${{ (cantidadDevolver * itemParaDevolver.precio_unitario) | number:'1.0-0' }}</strong>
+            </p>
+          }
+        </div>
+        <div class="vdd-submodal-footer">
+          <button class="vdd-btn-sec" (click)="mostrarDevolverItem.set(false)">Cancelar</button>
+          <button class="vdd-btn-confirm" (click)="confirmarDevolverItem()" [disabled]="cargandoAccion()">
+            @if (cargandoAccion()) { <mat-spinner diameter="16"></mat-spinner> }
+            <mat-icon>check</mat-icon> Confirmar Devolución
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ══════════════ SUB-MODAL: Clausurar venta ══════════════ -->
+  @if (mostrarClausurar()) {
+    <div class="vdd-submodal-backdrop" (click)="mostrarClausurar.set(false)">
+      <div class="vdd-submodal" (click)="$event.stopPropagation()">
+        <div class="vdd-submodal-header vdd-submodal-warn">
+          <mat-icon>block</mat-icon>
+          <h4>¿Clausurar el Ticket {{ ventaSeleccionada()?.folio }}?</h4>
+        </div>
+        <div class="vdd-submodal-body">
+          <p>Todos los productos volverán al inventario.</p>
+          <p class="vdd-sub-warn">Esta acción no se puede deshacer.</p>
+        </div>
+        <div class="vdd-submodal-footer">
+          <button class="vdd-btn-sec" (click)="mostrarClausurar.set(false)">Cancelar</button>
+          <button class="vdd-btn-danger" (click)="confirmarClausurar()" [disabled]="cargandoAccion()">
+            @if (cargandoAccion()) { <mat-spinner diameter="16"></mat-spinner> }
+            <mat-icon>check</mat-icon> Confirmar Clausura
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+</div>

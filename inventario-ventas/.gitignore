@@ -12,12 +12,23 @@ venv/
 local_settings.py
 db.sqlite3
 media/
+.env.*
 
 # Node / Angular
 node_modules/
 dist/
 .angular/
+environment.ts
 
 # Sistema
 .DS_Store
 Thumbs.db
+
+# Claude
+CLAUDE.md
+
+#Backups
+backups/
+
+#Docker
+docker-compose.yml

@@ -100,15 +100,20 @@ class ProductoViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         qs = Producto.objects.filter(activo=True).select_related('categoria')
         query = self.request.query_params.get('search', '').strip()
+        solo_nombre = self.request.query_params.get('campo') == 'nombre'
         if query:
             if '%' in query:
-                # Wildcard mode: remove % and search anywhere (icontains)
-                q = query.replace('%', '').strip()
-                if q:
-                    qs = qs.filter(Q(nombre__icontains=q) | Q(codigo__icontains=q))
+                terminos = query.replace('%', ' ').split()
+                for t in terminos:
+                    if solo_nombre:
+                        qs = qs.filter(nombre__icontains=t)
+                    else:
+                        qs = qs.filter(Q(nombre__icontains=t) | Q(codigo__icontains=t))
             else:
-                # Default: search from beginning (istartswith)
-                qs = qs.filter(Q(nombre__istartswith=query) | Q(codigo__istartswith=query))
+                if solo_nombre:
+                    qs = qs.filter(nombre__istartswith=query)
+                else:
+                    qs = qs.filter(Q(nombre__istartswith=query) | Q(codigo__istartswith=query))
         return qs
 
     def get_permissions(self):
@@ -140,6 +145,21 @@ class ProductoViewSet(viewsets.ModelViewSet):
             'kit__componentes__componente'
         ).get(id=producto_id)
 
+    def perform_create(self, serializer):
+        instance = serializer.save()
+        try:
+            from logs.views import log_evento
+            log_evento(self.request, 'PRODUCTO', 'productos',
+                       f'Producto creado: {instance.codigo} — {instance.nombre}',
+                       datos_extra={
+                           'id': instance.id, 'codigo': instance.codigo,
+                           'nombre': instance.nombre, 'tipo': instance.tipo,
+                           'precio_venta': float(instance.precio_venta),
+                           'stock': float(instance.inventario_actual),
+                       })
+        except Exception:
+            pass
+
     def create(self, request, *args, **kwargs):
         componentes_data = request.data.get('componentes', None)
         response = super().create(request, *args, **kwargs)
@@ -153,7 +173,28 @@ class ProductoViewSet(viewsets.ModelViewSet):
 
     def update(self, request, *args, **kwargs):
         componentes_data = request.data.get('componentes', None)
+        try:
+            _antes = Producto.objects.values(
+                'nombre', 'precio_venta', 'precio_costo', 'inventario_actual'
+            ).get(pk=self.get_object().pk)
+        except Exception:
+            _antes = None
         response = super().update(request, *args, **kwargs)
+        try:
+            from logs.views import log_evento
+            prod = Producto.objects.get(id=response.data['id'])
+            cambios = {}
+            if _antes:
+                for k in ('nombre', 'precio_venta', 'precio_costo', 'inventario_actual'):
+                    antes_v = str(_antes[k])
+                    despues_v = str(getattr(prod, k))
+                    if antes_v != despues_v:
+                        cambios[k] = {'antes': antes_v, 'despues': despues_v}
+            log_evento(request, 'PRODUCTO', 'productos',
+                       f'Producto editado: {prod.codigo} — {prod.nombre}',
+                       datos_extra={'id': prod.id, 'codigo': prod.codigo, 'cambios': cambios})
+        except Exception:
+            pass
         if componentes_data is not None:
             producto = Producto.objects.get(id=response.data['id'])
             if producto.tipo == 'kit':
@@ -172,6 +213,15 @@ class ProductoViewSet(viewsets.ModelViewSet):
         if referencias > 0:
             producto.activo = False
             producto.save()
+            try:
+                from logs.views import log_evento
+                log_evento(request, 'PRODUCTO', 'productos',
+                           f'Producto desactivado: {producto.codigo} — {producto.nombre} ({referencias} ventas)',
+                           nivel='WARNING',
+                           datos_extra={'id': producto.id, 'codigo': producto.codigo,
+                                        'nombre': producto.nombre, 'referencias': referencias})
+            except Exception:
+                pass
             return Response({
                 'mensaje': (
                     f'El producto "{producto.nombre}" fue desactivado porque '
@@ -181,9 +231,19 @@ class ProductoViewSet(viewsets.ModelViewSet):
                 'desactivado': True
             }, status=200)
 
+        nombre = producto.nombre
+        codigo = producto.codigo
         producto.delete()
+        try:
+            from logs.views import log_evento
+            log_evento(request, 'PRODUCTO', 'productos',
+                       f'Producto eliminado: {codigo} — {nombre}',
+                       nivel='WARNING',
+                       datos_extra={'codigo': codigo, 'nombre': nombre})
+        except Exception:
+            pass
         return Response({
-            'mensaje': f'Producto "{producto.nombre}" eliminado correctamente.',
+            'mensaje': f'Producto "{nombre}" eliminado correctamente.',
             'eliminado': True
         }, status=200)
 
@@ -226,7 +286,9 @@ class ProductoViewSet(viewsets.ModelViewSet):
             )
 
         # Accept nueva_cantidad (preferred) or inventario_actual (legacy)
-        raw = request.data.get('nueva_cantidad') or request.data.get('inventario_actual')
+        raw = request.data.get('nueva_cantidad')
+        if raw is None:
+            raw = request.data.get('inventario_actual')
         if raw is None:
             return Response({'error': 'Debes enviar nueva_cantidad.'}, status=400)
 
@@ -275,7 +337,17 @@ class ProductoViewSet(viewsets.ModelViewSet):
         from productos.signals import notificar_stock_actualizado, crear_notificacion_stock
         notificar_stock_actualizado(producto)
         crear_notificacion_stock(producto)
-
+        try:
+            from logs.views import log_evento
+            log_evento(request, 'PRODUCTO', 'productos',
+                       f'Inventario ajustado: {producto.nombre} — {float(stock_antes)} → {float(nueva_cantidad)}',
+                       datos_extra={
+                           'id': producto.id, 'codigo': producto.codigo, 'nombre': producto.nombre,
+                           'stock_antes': float(stock_antes), 'stock_nuevo': float(nueva_cantidad),
+                           'tipo': tipo, 'motivo': motivo,
+                       })
+        except Exception:
+            pass
         return Response(self.get_serializer(producto).data)
 
     # ── Importación masiva ────────────────────────────────────────────────────
@@ -489,4 +561,14 @@ class ProductoViewSet(viewsets.ModelViewSet):
             except Exception as e:
                 errores.append({'fila': fila_num, 'motivo': str(e)})
 
+        try:
+            from logs.views import log_evento
+            nivel = 'WARNING' if errores else 'INFO'
+            log_evento(request, 'PRODUCTO', 'productos',
+                       f'Importación Excel: {creados} creados, {actualizados} actualizados, {len(errores)} errores',
+                       nivel=nivel,
+                       datos_extra={'creados': creados, 'actualizados': actualizados,
+                                    'errores': errores[:20]})
+        except Exception:
+            pass
         return Response({'creados': creados, 'actualizados': actualizados, 'errores': errores})

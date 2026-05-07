@@ -1,194 +1,514 @@
 <app-navbar></app-navbar>
 
-<div class="cfg-page">
-  <div class="cfg-container">
+<div class="cfg-layout">
 
-    <div class="cfg-header">
-      <mat-icon>print</mat-icon>
-      <h1>Configuración de Impresión</h1>
-    </div>
+  <!-- ── Sidebar ─────────────────────────────────────────── -->
+  <aside class="cfg-sidebar">
+    <div class="sidebar-titulo">Configuración</div>
+    @for (item of navItems; track item.id) {
+      @if (!item.adminOnly || esAdmin()) {
+        <button
+          class="nav-item"
+          [class.active]="seccion() === item.id"
+          (click)="seccion.set(item.id)">
+          <mat-icon>{{ item.icono }}</mat-icon>
+          <span>{{ item.label }}</span>
+        </button>
+      }
+    }
+  </aside>
 
-    <!-- ===== INFO IMPRESORA ===== -->
-    <div class="cfg-card cfg-card-info">
-      <div class="card-titulo">
-        <mat-icon>info</mat-icon>
-        Cómo configurar tu impresora térmica
-      </div>
-      <div class="card-body">
-        <p>El sistema usa la <strong>impresora predeterminada de Chrome</strong>.</p>
-        <ol class="pasos">
-          <li>Pulsa <strong>Imprimir ticket de prueba</strong> abajo</li>
-          <li>En el diálogo de Chrome, selecciona tu <strong>impresora térmica</strong></li>
-          <li>Ajusta el tamaño de papel a <strong>80mm × Auto</strong> (o "Sin márgenes")</li>
-          <li>Desde ese momento Chrome recordará la impresora seleccionada</li>
-        </ol>
-      </div>
-    </div>
+  <!-- ── Contenido principal ─────────────────────────────── -->
+  <main class="cfg-contenido" [class.cfg-full]="seccion() === 'usuarios'">
 
-    <!-- ===== KIOSK PRINTING ===== -->
-    <div class="cfg-card alerta-kiosk">
-      <div class="card-titulo kiosk-titulo">
-        <mat-icon>warning</mat-icon>
-        Impresión sin diálogos — Chrome Kiosk
-      </div>
-      <div class="card-body">
-        <p>
-          Para que Chrome imprima directamente a la impresora por defecto
-          <strong>sin mostrar ningún diálogo</strong>, debe abrirse con el flag
-          <code>--kiosk-printing</code>.
-        </p>
-        <ol class="pasos">
-          <li>Crea un acceso directo a Chrome en el escritorio</li>
-          <li>Haz clic derecho → <strong>Propiedades</strong></li>
-          <li>En el campo <strong>Destino</strong>, reemplaza el contenido por:</li>
-        </ol>
-        <div class="kiosk-cmd-box">
-          <code class="kiosk-cmd">{{ comandoKiosk }}</code>
-          <button class="btn-copiar" (click)="copiarComando()">
-            <mat-icon>content_copy</mat-icon> Copiar
-          </button>
-        </div>
-        <p class="kiosk-nota">
-          Usa ese acceso directo para abrir Chrome en esta PC.
-          Puedes configurar la impresora por defecto del sistema en
-          <strong>Configuración de Windows → Bluetooth y dispositivos → Impresoras</strong>.
-        </p>
-      </div>
-    </div>
-
-    <!-- ===== OPCIONES ===== -->
-    <div class="cfg-card">
-      <div class="card-titulo">
-        <mat-icon>tune</mat-icon>
-        Opciones de impresión
-      </div>
-      <div class="card-body">
-
-        <label class="toggle-row">
-          <div class="toggle-info">
-            <span class="toggle-label">Imprimir automáticamente al cobrar</span>
-            <span class="toggle-desc">
-              Al pulsar "Cobrar e Imprimir" se envía directo a imprimir sin confirmación adicional.
-            </span>
-          </div>
-          <div class="toggle-ctrl">
-            <input type="checkbox" class="toggle-input" [(ngModel)]="autoImprimir"
-                   (ngModelChange)="onAutoImprimirChange()">
-            <span class="toggle-track">
-              <span class="toggle-thumb"></span>
-            </span>
-          </div>
-        </label>
-
-      </div>
-    </div>
-
-    <!-- ===== ANCHO DE PAPEL ===== -->
-    <div class="cfg-card">
-      <div class="card-titulo">
-        <mat-icon>straighten</mat-icon>
-        Ancho de papel
-      </div>
-      <div class="card-body">
-        <p class="campo-desc-top">Cada equipo guarda su propia configuración. Selecciona el ancho de tu impresora térmica.</p>
-        <div class="radio-opciones">
-          <label class="radio-opcion" [class.seleccionado]="anchoPapel === '80'">
-            <input type="radio" name="ancho" value="80" [(ngModel)]="anchoPapel" (ngModelChange)="onAnchoPapelChange()">
-            <div class="radio-info">
-              <span class="radio-label">80mm</span>
-              <span class="radio-desc">Impresora estándar</span>
-            </div>
-          </label>
-          <label class="radio-opcion" [class.seleccionado]="anchoPapel === '58'">
-            <input type="radio" name="ancho" value="58" [(ngModel)]="anchoPapel" (ngModelChange)="onAnchoPapelChange()">
-            <div class="radio-info">
-              <span class="radio-label">58mm</span>
-              <span class="radio-desc">Impresora compacta</span>
-            </div>
-          </label>
+    <!-- ═══════════════════════════════ IMPRESIÓN ═══════════════════════════════ -->
+    @if (seccion() === 'impresion') {
+      <div class="vista-header">
+        <mat-icon>print</mat-icon>
+        <div>
+          <h2>Impresión</h2>
+          <p class="subtitulo">Configura tu impresora térmica y formato de tickets</p>
         </div>
       </div>
-    </div>
 
-    <!-- ===== FORMATO DE DESCRIPCIÓN ===== -->
-    <div class="cfg-card">
-      <div class="card-titulo">
-        <mat-icon>wrap_text</mat-icon>
-        Formato de descripción del producto
-      </div>
-      <div class="card-body">
-        <p class="campo-desc-top">Controla cómo se imprime el nombre del producto cuando es largo.</p>
-        <div class="radio-opciones radio-opciones-col">
-          <label class="radio-opcion" [class.seleccionado]="formatoDescripcion === 'completo'">
-            <input type="radio" name="formato_desc" value="completo" [(ngModel)]="formatoDescripcion" (ngModelChange)="onFormatoDescripcionChange()">
-            <div class="radio-info">
-              <span class="radio-label">Completo (varias líneas)</span>
-              <span class="radio-desc">El nombre se parte en múltiples líneas si no cabe</span>
-            </div>
-          </label>
-          <label class="radio-opcion" [class.seleccionado]="formatoDescripcion === 'corto'">
-            <input type="radio" name="formato_desc" value="corto" [(ngModel)]="formatoDescripcion" (ngModelChange)="onFormatoDescripcionChange()">
-            <div class="radio-info">
-              <span class="radio-label">Corto (una línea)</span>
-              <span class="radio-desc">El nombre se trunca para que todo quede en una sola línea</span>
-            </div>
-          </label>
-        </div>
-      </div>
-    </div>
-
-    <!-- ===== PRECIO ESPECIAL (solo Admin) ===== -->
-    @if (esAdmin()) {
-      <div class="cfg-card">
-        <div class="card-titulo">
-          <mat-icon>star</mat-icon>
-          Clientes con Precio Especial (Costo sin IVA)
-        </div>
+      <!-- Cómo configurar -->
+      <div class="cfg-card cfg-card-info">
+        <div class="card-titulo"><mat-icon>info</mat-icon> Cómo configurar tu impresora térmica</div>
         <div class="card-body">
-          <p>Los clientes marcados verán sus tickets impresos con precio costo sin IVA sin ninguna etiqueta visible.</p>
-          @if (cargandoClientes()) {
-            <div class="pe-loading">
-              <mat-spinner diameter="28"></mat-spinner>
-              <span>Cargando clientes...</span>
+          <p>El sistema usa la <strong>impresora predeterminada de Chrome</strong>.</p>
+          <ol class="pasos">
+            <li>Pulsa <strong>Imprimir ticket de prueba</strong> abajo</li>
+            <li>En el diálogo de Chrome, selecciona tu <strong>impresora térmica</strong></li>
+            <li>Ajusta el tamaño de papel a <strong>80mm × Auto</strong> (o "Sin márgenes")</li>
+            <li>Desde ese momento Chrome recordará la impresora seleccionada</li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- Kiosk printing -->
+      <div class="cfg-card alerta-kiosk">
+        <div class="card-titulo kiosk-titulo"><mat-icon>warning</mat-icon> Impresión sin diálogos — Chrome Kiosk</div>
+        <div class="card-body">
+          <p>
+            Para imprimir directamente <strong>sin mostrar ningún diálogo</strong>,
+            abre Chrome con el flag <code>--kiosk-printing</code>.
+          </p>
+          <ol class="pasos">
+            <li>Crea un acceso directo a Chrome en el escritorio</li>
+            <li>Haz clic derecho → <strong>Propiedades</strong></li>
+            <li>En el campo <strong>Destino</strong>, reemplaza el contenido por:</li>
+          </ol>
+          <div class="kiosk-cmd-box">
+            <code class="kiosk-cmd">{{ comandoKiosk }}</code>
+            <button class="btn-copiar" (click)="copiarComando()">
+              <mat-icon>content_copy</mat-icon> Copiar
+            </button>
+          </div>
+          <p class="kiosk-nota">
+            Configura la impresora por defecto en
+            <strong>Configuración de Windows → Bluetooth y dispositivos → Impresoras</strong>.
+          </p>
+        </div>
+      </div>
+
+      <!-- Opciones -->
+      <div class="cfg-card">
+        <div class="card-titulo"><mat-icon>tune</mat-icon> Opciones de impresión</div>
+        <div class="card-body">
+          <label class="toggle-row">
+            <div class="toggle-info">
+              <span class="toggle-label">Imprimir automáticamente al cobrar</span>
+              <span class="toggle-desc">Al pulsar "Cobrar e Imprimir" se envía directo sin confirmación adicional.</span>
             </div>
-          } @else if (clientes().length === 0) {
-            <p class="pe-empty">No hay clientes de crédito registrados.</p>
-          } @else {
-            <div class="pe-lista">
-              @for (c of clientes(); track c.id) {
-                <label class="pe-row" [class.pe-row-on]="c.precio_especial">
-                  <span class="pe-nombre">{{ c.nombre }}</span>
-                  <div class="toggle-ctrl">
-                    <input type="checkbox"
-                           class="toggle-input"
-                           [checked]="c.precio_especial"
-                           [disabled]="guardandoId() === c.id"
-                           (change)="togglePrecioEspecial(c)">
-                    <span class="toggle-track">
-                      <span class="toggle-thumb"></span>
-                    </span>
-                  </div>
-                </label>
-              }
+            <div class="toggle-ctrl">
+              <input type="checkbox" class="toggle-input" [(ngModel)]="autoImprimir" (ngModelChange)="onAutoImprimirChange()">
+              <span class="toggle-track"><span class="toggle-thumb"></span></span>
             </div>
-          }
+          </label>
+        </div>
+      </div>
+
+      <!-- Ancho de papel -->
+      <div class="cfg-card">
+        <div class="card-titulo"><mat-icon>straighten</mat-icon> Ancho de papel</div>
+        <div class="card-body">
+          <p class="campo-desc-top">Cada equipo guarda su propia configuración.</p>
+          <div class="radio-opciones">
+            <label class="radio-opcion" [class.seleccionado]="anchoPapel === '80'">
+              <input type="radio" name="ancho" value="80" [(ngModel)]="anchoPapel" (ngModelChange)="onAnchoPapelChange()">
+              <div class="radio-info">
+                <span class="radio-label">80mm</span>
+                <span class="radio-desc">Impresora estándar</span>
+              </div>
+            </label>
+            <label class="radio-opcion" [class.seleccionado]="anchoPapel === '58'">
+              <input type="radio" name="ancho" value="58" [(ngModel)]="anchoPapel" (ngModelChange)="onAnchoPapelChange()">
+              <div class="radio-info">
+                <span class="radio-label">58mm</span>
+                <span class="radio-desc">Impresora compacta</span>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Formato descripción -->
+      <div class="cfg-card">
+        <div class="card-titulo"><mat-icon>wrap_text</mat-icon> Formato de descripción del producto</div>
+        <div class="card-body">
+          <p class="campo-desc-top">Controla cómo se imprime el nombre del producto cuando es largo.</p>
+          <div class="radio-opciones radio-opciones-col">
+            <label class="radio-opcion" [class.seleccionado]="formatoDescripcion === 'completo'">
+              <input type="radio" name="formato_desc" value="completo" [(ngModel)]="formatoDescripcion" (ngModelChange)="onFormatoDescripcionChange()">
+              <div class="radio-info">
+                <span class="radio-label">Completo (varias líneas)</span>
+                <span class="radio-desc">El nombre se parte en múltiples líneas si no cabe</span>
+              </div>
+            </label>
+            <label class="radio-opcion" [class.seleccionado]="formatoDescripcion === 'corto'">
+              <input type="radio" name="formato_desc" value="corto" [(ngModel)]="formatoDescripcion" (ngModelChange)="onFormatoDescripcionChange()">
+              <div class="radio-info">
+                <span class="radio-label">Corto (una línea)</span>
+                <span class="radio-desc">El nombre se trunca para que quede en una sola línea</span>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ticket de prueba -->
+      <div class="cfg-card">
+        <div class="card-titulo"><mat-icon>receipt</mat-icon> Ticket de prueba</div>
+        <div class="card-body prueba-body">
+          <p>Imprime un ticket con datos ficticios para verificar el formato.</p>
+          <button class="btn-ppal" (click)="imprimirPrueba()">
+            <mat-icon>print</mat-icon> Imprimir ticket de prueba
+          </button>
         </div>
       </div>
     }
 
-    <!-- ===== TICKET DE PRUEBA ===== -->
-    <div class="cfg-card">
-      <div class="card-titulo">
-        <mat-icon>receipt</mat-icon>
-        Ticket de prueba
+    <!-- ═══════════════════════════════ VENTAS ═══════════════════════════════ -->
+    @if (seccion() === 'ventas') {
+      <div class="vista-header">
+        <mat-icon>point_of_sale</mat-icon>
+        <div>
+          <h2>Ventas</h2>
+          <p class="subtitulo">Opciones relacionadas con el proceso de ventas</p>
+        </div>
       </div>
-      <div class="card-body prueba-body">
-        <p>Imprime un ticket con datos ficticios para verificar el formato y configurar la impresora.</p>
-        <button class="btn-ppal" (click)="imprimirPrueba()">
-          <mat-icon>print</mat-icon> Imprimir ticket de prueba
+
+      @if (esAdmin()) {
+        <div class="cfg-card">
+          <div class="card-titulo"><mat-icon>star</mat-icon> Clientes con Precio Especial (Costo sin IVA)</div>
+          <div class="card-body">
+            <p>Los clientes marcados verán sus tickets impresos con precio costo sin IVA, sin ninguna etiqueta visible.</p>
+            @if (cargandoClientes()) {
+              <div class="pe-loading">
+                <mat-spinner diameter="28"></mat-spinner>
+                <span>Cargando clientes...</span>
+              </div>
+            } @else if (clientes().length === 0) {
+              <p class="pe-empty">No hay clientes de crédito registrados.</p>
+            } @else {
+              <div class="pe-lista">
+                @for (c of clientes(); track c.id) {
+                  <label class="pe-row" [class.pe-row-on]="c.precio_especial">
+                    <span class="pe-nombre">{{ c.nombre }}</span>
+                    <div class="toggle-ctrl">
+                      <input type="checkbox"
+                             class="toggle-input"
+                             [checked]="c.precio_especial"
+                             [disabled]="guardandoId() === c.id"
+                             (change)="togglePrecioEspecial(c)">
+                      <span class="toggle-track"><span class="toggle-thumb"></span></span>
+                    </div>
+                  </label>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      } @else {
+        <div class="cfg-card">
+          <div class="card-body">
+            <p class="pe-empty">No tienes permisos para ver esta sección.</p>
+          </div>
+        </div>
+      }
+    }
+
+    <!-- ═══════════════════════════════ RECUPERACIÓN ═══════════════════════════════ -->
+    @if (seccion() === 'recuperacion' && esAdmin()) {
+      <div class="vista-header">
+        <mat-icon>backup</mat-icon>
+        <div>
+          <h2>Recuperación</h2>
+          <p class="subtitulo">Gestión de backups de la base de datos</p>
+        </div>
+      </div>
+
+      <div class="cfg-card">
+        <div class="card-titulo"><mat-icon>storage</mat-icon> Base de Datos y Backups</div>
+        <div class="card-body">
+
+          <!-- Métricas -->
+          <div class="bk-metricas">
+            <div class="bk-metrica">
+              <span class="bk-met-label">Total backups</span>
+              <span class="bk-met-valor">{{ backups().length }}</span>
+            </div>
+            <div class="bk-metrica">
+              <span class="bk-met-label">Espacio usado</span>
+              <span class="bk-met-valor">
+                {{ espacioUsadoMB() | number:'1.0-0' }} MB
+                <span class="bk-met-sub">/ 30 backups</span>
+              </span>
+            </div>
+            <div class="bk-metrica">
+              <span class="bk-met-label">Próxima limpieza</span>
+              <span class="bk-met-valor">{{ proximaLimpieza() | date:'d MMM yyyy' }}</span>
+            </div>
+            <div class="bk-metrica">
+              <span class="bk-met-label">Último backup</span>
+              <span class="bk-met-valor">{{ ultimoBackupHace() }}</span>
+            </div>
+          </div>
+
+          <!-- Botón -->
+          <button class="btn-ppal btn-backup" (click)="crearBackupManual()" [disabled]="creandoBackup()">
+            @if (creandoBackup()) {
+              <mat-spinner diameter="18"></mat-spinner> Creando backup...
+            } @else {
+              <mat-icon>save</mat-icon> Crear Backup Ahora
+            }
+          </button>
+
+          <!-- Lista -->
+          @if (cargandoBackups()) {
+            <div class="bk-cargando">
+              <mat-spinner diameter="24"></mat-spinner>
+              <span>Cargando backups...</span>
+            </div>
+          } @else if (backups().length === 0) {
+            <p class="bk-empty">No hay backups disponibles.</p>
+          } @else {
+            <div class="bk-tabla-wrap">
+              <table class="bk-tabla">
+                <thead>
+                  <tr>
+                    <th>Nombre</th>
+                    <th class="bk-th-r">Fecha</th>
+                    <th class="bk-th-r">Tamaño</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (b of backups(); track b.nombre) {
+                    <tr>
+                      <td class="bk-nombre">{{ b.nombre }}</td>
+                      <td class="bk-td-r">{{ b.fecha | date:'dd/MM/yyyy HH:mm' }}</td>
+                      <td class="bk-td-r">{{ b.tamano_mb | number:'1.2-2' }} MB</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+
+        </div>
+      </div>
+    }
+
+    <!-- ═══════════════════════════════ USUARIOS ═══════════════════════════════ -->
+    @if (seccion() === 'usuarios' && esAdmin()) {
+
+      <!-- Tabs internas -->
+      <div class="usr-tabs">
+        <button class="usr-ptab" [class.activo]="tabUsuarios() === 'usuarios'" (click)="tabUsuarios.set('usuarios')">
+          <mat-icon>people</mat-icon> Usuarios
+        </button>
+        <button class="usr-ptab" [class.activo]="tabUsuarios() === 'roles'" (click)="tabUsuarios.set('roles')">
+          <mat-icon>admin_panel_settings</mat-icon> Roles y Permisos
         </button>
       </div>
-    </div>
 
-  </div>
+      <!-- TAB USUARIOS -->
+      @if (tabUsuarios() === 'usuarios') {
+        <div class="usr-two-col">
+          <!-- Lista izquierda -->
+          <div class="usr-col-lista">
+            <div class="usr-lista-header">
+              <div class="usr-search-box">
+                <mat-icon>search</mat-icon>
+                <input placeholder="Buscar usuario..." [ngModel]="busqueda()" (ngModelChange)="busqueda.set($event)">
+              </div>
+              <button class="usr-btn-nuevo" (click)="nuevoUsuario()">
+                <mat-icon>person_add</mat-icon> Nuevo
+              </button>
+            </div>
+
+            @if (cargandoUsuarios()) {
+              <div class="usr-cargando"><mat-icon class="usr-spin">sync</mat-icon></div>
+            } @else {
+              <div class="usr-item-list">
+                @for (u of usuariosFiltrados(); track u.id) {
+                  <div class="usr-usuario-card"
+                       [class.seleccionado]="usuarioSeleccionado()?.id === u.id"
+                       [class.inactivo]="!u.is_active"
+                       (click)="seleccionarUsuario(u)">
+                    <div class="usr-avatar" [style.background]="colorRol(u.rol_nombre)">{{ iniciales(u) }}</div>
+                    <div class="usr-info">
+                      <div class="usr-nombre">{{ u.first_name ? u.first_name + ' ' + u.last_name : u.username }}</div>
+                      <div class="usr-sub">&#64;{{ u.username }}</div>
+                    </div>
+                    <div class="usr-badges">
+                      @if (u.is_superuser) {
+                        <span class="usr-badge-rol" style="background:#b71c1c">Superuser</span>
+                      } @else if (u.rol_nombre) {
+                        <span class="usr-badge-rol" [style.background]="colorRol(u.rol_nombre)">{{ u.rol_nombre }}</span>
+                      }
+                      @if (!u.is_active) {
+                        <span class="usr-badge-inactivo">Inactivo</span>
+                      }
+                    </div>
+                  </div>
+                }
+                @if (usuariosFiltrados().length === 0) {
+                  <div class="usr-empty-list">No se encontraron usuarios</div>
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Formulario derecho -->
+          <div class="usr-col-form">
+            @if (modoFormulario()) {
+              <div class="usr-form-panel">
+                <div class="usr-form-title">
+                  <mat-icon>{{ modoFormulario() === 'nuevo' ? 'person_add' : 'edit' }}</mat-icon>
+                  {{ modoFormulario() === 'nuevo' ? 'Nuevo Usuario' : 'Editar Usuario' }}
+                </div>
+
+                <div class="usr-form-grid">
+                  <label class="usr-field-full">
+                    Username *
+                    <input class="usr-inp" [ngModel]="form().username" (ngModelChange)="updateForm('username', $event)" placeholder="username">
+                  </label>
+                  <label class="usr-field">
+                    Nombre
+                    <input class="usr-inp" [ngModel]="form().first_name" (ngModelChange)="updateForm('first_name', $event)" placeholder="Nombre">
+                  </label>
+                  <label class="usr-field">
+                    Apellido
+                    <input class="usr-inp" [ngModel]="form().last_name" (ngModelChange)="updateForm('last_name', $event)" placeholder="Apellido">
+                  </label>
+                  <label class="usr-field-full">
+                    Email
+                    <input class="usr-inp" type="email" [ngModel]="form().email" (ngModelChange)="updateForm('email', $event)" placeholder="email@ejemplo.com">
+                  </label>
+                  <label class="usr-field-full">
+                    Rol
+                    <select class="usr-inp" [ngModel]="form().rol" (ngModelChange)="updateForm('rol', $event ? +$event : null)">
+                      <option [ngValue]="null">Sin rol</option>
+                      @for (r of roles(); track r.id) {
+                        <option [value]="r.id">{{ r.nombre }}</option>
+                      }
+                    </select>
+                  </label>
+
+                  @if (modoFormulario() === 'nuevo') {
+                    <label class="usr-field">
+                      Contraseña *
+                      <input class="usr-inp" type="password" [ngModel]="form().password" (ngModelChange)="updateForm('password', $event)" placeholder="Mínimo 4 caracteres">
+                    </label>
+                    <label class="usr-field">
+                      Confirmar contraseña *
+                      <input class="usr-inp" type="password" [ngModel]="form().confirmar_password" (ngModelChange)="updateForm('confirmar_password', $event)" placeholder="Repetir contraseña">
+                    </label>
+                  }
+
+                  @if (modoFormulario() === 'editar') {
+                    <label class="usr-field-full usr-toggle-row">
+                      <input type="checkbox" [ngModel]="form().cambiar_password" (ngModelChange)="updateForm('cambiar_password', $event)">
+                      Cambiar contraseña
+                    </label>
+                    @if (form().cambiar_password) {
+                      <label class="usr-field">
+                        Nueva contraseña
+                        <input class="usr-inp" type="password" [ngModel]="form().password" (ngModelChange)="updateForm('password', $event)">
+                      </label>
+                      <label class="usr-field">
+                        Confirmar
+                        <input class="usr-inp" type="password" [ngModel]="form().confirmar_password" (ngModelChange)="updateForm('confirmar_password', $event)">
+                      </label>
+                    }
+                  }
+
+                  <div class="usr-field-full usr-toggle-row">
+                    <label>
+                      <input type="checkbox" [ngModel]="form().is_active" (ngModelChange)="updateForm('is_active', $event)">
+                      Usuario activo
+                    </label>
+                    @if (esSuperusuario()) {
+                      <label>
+                        <input type="checkbox" [ngModel]="form().is_superuser" (ngModelChange)="updateForm('is_superuser', $event)">
+                        Superusuario
+                      </label>
+                    }
+                  </div>
+                </div>
+
+                <div class="usr-form-actions">
+                  <button class="usr-btn-cancelar" (click)="cancelarUsuario()">Cancelar</button>
+                  <button class="usr-btn-guardar" (click)="guardarUsuario()" [disabled]="guardandoUsuario()">
+                    @if (guardandoUsuario()) { Guardando... } @else { Guardar }
+                  </button>
+                </div>
+              </div>
+            } @else {
+              <div class="usr-form-empty">
+                <mat-icon>person</mat-icon>
+                <p>Selecciona un usuario o crea uno nuevo</p>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- TAB ROLES -->
+      @if (tabUsuarios() === 'roles') {
+        <div class="usr-two-col">
+          <!-- Lista roles -->
+          <div class="usr-col-lista">
+            <div class="usr-lista-header">
+              <span class="usr-lista-titulo">Roles</span>
+              <button class="usr-btn-nuevo" (click)="creandoRol.set(true)">
+                <mat-icon>add</mat-icon> Nuevo Rol
+              </button>
+            </div>
+
+            @if (creandoRol()) {
+              <div class="usr-nuevo-rol-box">
+                <input class="usr-inp" [ngModel]="nuevoRolNombre()" (ngModelChange)="nuevoRolNombre.set($event)" placeholder="Nombre del rol" (keyup.enter)="crearRol()">
+                <div class="usr-flex-row">
+                  <button class="usr-btn-cancelar" (click)="creandoRol.set(false); nuevoRolNombre.set('')">Cancelar</button>
+                  <button class="usr-btn-guardar" (click)="crearRol()">Crear</button>
+                </div>
+              </div>
+            }
+
+            <div class="usr-item-list">
+              @for (r of roles(); track r.id) {
+                <div class="usr-rol-card" [class.seleccionado]="rolSeleccionado()?.id === r.id" (click)="seleccionarRol(r)">
+                  <div class="usr-rol-avatar" [style.background]="colorRol(r.nombre)">{{ r.nombre[0] }}</div>
+                  <div class="usr-rol-info">
+                    <div class="usr-rol-nombre">{{ r.nombre }}</div>
+                    <div class="usr-rol-sub">{{ r.permisos.length }} permisos</div>
+                  </div>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Permisos -->
+          <div class="usr-col-form">
+            @if (rolSeleccionado()) {
+              <div class="usr-form-panel">
+                <div class="usr-form-title">
+                  <mat-icon>admin_panel_settings</mat-icon>
+                  Permisos de: {{ rolSeleccionado()!.nombre }}
+                </div>
+                <div class="usr-permisos-grid">
+                  @for (p of permisos(); track p.id) {
+                    <label class="usr-permiso-row">
+                      <input type="checkbox" [ngModel]="tienePermiso(p.id)" (ngModelChange)="togglePermiso(p.id)">
+                      <div class="usr-permiso-info">
+                        <span class="usr-permiso-codigo">{{ p.codigo }}</span>
+                        <span class="usr-permiso-desc">{{ p.descripcion }}</span>
+                      </div>
+                    </label>
+                  }
+                  @if (permisos().length === 0) {
+                    <div class="usr-empty-list">No hay permisos configurados</div>
+                  }
+                </div>
+                <div class="usr-form-actions">
+                  <button class="usr-btn-cancelar" (click)="cancelarRol()">Cancelar</button>
+                  <button class="usr-btn-guardar" (click)="guardarPermisos()" [disabled]="guardandoUsuario()">
+                    @if (guardandoUsuario()) { Guardando... } @else { Guardar permisos }
+                  </button>
+                </div>
+              </div>
+            } @else {
+              <div class="usr-form-empty">
+                <mat-icon>admin_panel_settings</mat-icon>
+                <p>Selecciona un rol para editar sus permisos</p>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    }
+
+  </main>
 </div>

@@ -224,6 +224,13 @@
     &:hover:not(:disabled) { background: #283593; }
   }
 
+  &.btn-importar {
+    background: #fff;
+    color: #00695c;
+    border: 1px solid #80cbc4;
+    &:hover { background: #e0f2f1; }
+  }
+
   &.btn-eliminar {
     background: #fff;
     color: #c62828;

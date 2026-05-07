@@ -108,8 +108,9 @@ export class ProductosComponent implements OnInit, OnDestroy {
   catalogoTodos      = signal<ProductoDetalle[]>([]);
   catalogoFiltrado   = signal<ProductoDetalle[]>([]);
   catalogoVisible    = signal<ProductoDetalle[]>([]);
-  catalogoBuscador   = '';
-  catalogoCategoria  = '';
+  catalogoBuscador       = '';
+  catalogoBuscadorCodigo = '';
+  catalogoCategoria      = '';
   catalogoPage       = 0;
   catalogoPageSize   = 50;
   soloSinCosto       = signal(false);
@@ -643,11 +644,9 @@ export class ProductosComponent implements OnInit, OnDestroy {
     const catId = this.catalogoCategoria ? parseInt(this.catalogoCategoria, 10) : null;
     let res = this.catalogoTodos();
     if (this.soloSinCosto()) res = res.filter(p => Number(p.precio_costo) === 0);
-    if (q) res = res.filter(p =>
-      p.nombre.toLowerCase().includes(q) ||
-      p.codigo.toLowerCase().includes(q) ||
-      (p.categoria_nombre ?? '').toLowerCase().includes(q)
-    );
+    if (q) res = res.filter(p => p.nombre.toLowerCase().includes(q));
+    const qCod = this.catalogoBuscadorCodigo.toLowerCase();
+    if (qCod) res = res.filter(p => p.codigo.toLowerCase().includes(qCod));
     if (catId) res = res.filter(p => p.categoria === catId);
     this.catalogoFiltrado.set(sortArr(res, this.ordenCatalogo()));
     this.catalogoPage = 0;

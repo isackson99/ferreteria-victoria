@@ -40,6 +40,34 @@ export class UsuariosComponent implements OnInit {
   rolSeleccionado = signal<Rol | null>(null);
   permisosRolActual = signal<Set<number>>(new Set());
 
+  private readonly CATEGORIAS_PERMISOS: { titulo: string; codigos: string[] }[] = [
+    { titulo: 'Ventas', codigos: ['puede_vender', 'puede_cancelar_ventas'] },
+    { titulo: 'Inventario', codigos: ['puede_ver_inventario', 'puede_ajustar_inventario', 'puede_crear_productos', 'puede_ver_costo'] },
+    { titulo: 'Créditos', codigos: ['puede_abonar', 'puede_ver_creditos', 'puede_crear_cliente_credito'] },
+    { titulo: 'Clientes factura', codigos: ['puede_crear_cliente_factura'] },
+    { titulo: 'Usuarios de plataforma', codigos: ['puede_crear_usuarios', 'puede_crear_usuario_plataforma'] },
+    { titulo: 'Reportes', codigos: ['puede_ver_reportes'] },
+  ];
+
+  permisosAgrupados = computed(() => {
+    const todos = this.permisos();
+    const result: { titulo: string; permisos: Permiso[] }[] = [];
+    const asignados = new Set<number>();
+    for (const cat of this.CATEGORIAS_PERMISOS) {
+      const ps = cat.codigos
+        .map(c => todos.find(p => p.codigo === c))
+        .filter((p): p is Permiso => !!p);
+      if (ps.length > 0) {
+        ps.forEach(p => asignados.add(p.id));
+        result.push({ titulo: cat.titulo, permisos: ps });
+      }
+    }
+    // Catch any permisos not covered by categories
+    const otros = todos.filter(p => !asignados.has(p.id));
+    if (otros.length > 0) result.push({ titulo: 'Otros', permisos: otros });
+    return result;
+  });
+
   usuariosFiltrados = computed(() => {
     const q = this.busqueda().toLowerCase();
     if (!q) return this.usuarios();

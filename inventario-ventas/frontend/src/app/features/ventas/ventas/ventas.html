@@ -32,41 +32,47 @@
         <span>INS - Artículo Común</span>
       </button>
 
-      <button class="action-btn" (click)="abrirBuscador()" matTooltip="Buscar producto por nombre (F10)">
+      <button class="action-btn action-primary" (click)="abrirBuscador()" matTooltip="Buscar producto por nombre (F10)">
         <mat-icon>search</mat-icon>
         <span>F10 Buscar</span>
       </button>
 
-      <button class="action-btn action-danger" (click)="borrarArticuloSeleccionado()" matTooltip="Borrar artículo seleccionado (Del)">
+      <button class="action-btn action-warn" (click)="borrarArticuloSeleccionado()" matTooltip="Borrar artículo seleccionado (Del)">
         <mat-icon>delete_outline</mat-icon>
         <span>DEL - Borrar Art.</span>
       </button>
 
-      <div class="actions-sep"></div>
+      <button class="action-btn action-devolucion" (click)="abrirDevolucion()" matTooltip="Registrar devolución de producto">
+        <mat-icon>undo</mat-icon>
+        <span>Producto Devuelto</span>
+      </button>
 
-      <button class="action-btn action-primary" (click)="nuevoTicket()" matTooltip="Crear nuevo ticket">
-        <mat-icon>add_circle_outline</mat-icon>
-        <span>Nuevo Ticket</span>
+      <button class="action-btn action-verde" (click)="cotizarTicket()" matTooltip="Guardar cotización de los artículos actuales">
+        <mat-icon>request_quote</mat-icon>
+        <span>Cotizar</span>
+      </button>
+
+      <button class="action-btn action-mayoreo" (click)="aplicarMayoreoAlSeleccionado()" matTooltip="Aplicar/revertir precio mayoreo al artículo seleccionado">
+        <mat-icon>sell</mat-icon>
+        <span>Mayoreo</span>
+      </button>
+
+      <button class="action-btn action-descuento" (click)="abrirDescuento()" matTooltip="Aplicar descuento al total del ticket">
+        <mat-icon>discount</mat-icon>
+        <span>Descuento</span>
+      </button>
+
+      <button class="action-btn" (click)="abrirBuscarCotizacion()" matTooltip="Buscar y cargar una cotización guardada">
+        <mat-icon>find_in_page</mat-icon>
+        <span>Buscar Cotización</span>
       </button>
 
       @if (tickets().length > 1) {
-        <button class="action-btn action-danger" (click)="eliminarTicketActivo()" matTooltip="Eliminar ticket activo">
-          <mat-icon>remove_circle_outline</mat-icon>
+        <button class="action-btn action-warn" (click)="eliminarTicketActivo()" matTooltip="Eliminar el ticket actual">
+          <mat-icon>remove_shopping_cart</mat-icon>
           <span>Eliminar Ticket</span>
         </button>
       }
-
-      <button class="action-btn" [class.action-assigned]="ticketActivo()?.cliente_factura_nombre"
-              (click)="onAsignarClienteFactura()" matTooltip="Asignar cliente factura">
-        <mat-icon>receipt_long</mat-icon>
-        <span>
-          @if (ticketActivo()?.cliente_factura_nombre) {
-            {{ ticketActivo()!.cliente_factura_nombre }}
-          } @else {
-            Asignar Cliente Factura
-          }
-        </span>
-      </button>
     </div>
 
   </div>
@@ -99,7 +105,9 @@
         (ticketActualizado)="onTicketActualizado($event)"
         (ticketCompletado)="onTicketCompletado($event)"
         (accionRealizada)="refocusBarcodeInput()"
-        (sugerirMayoreo)="onSugerirMayoreo($event)">
+        (sugerirMayoreo)="onSugerirMayoreo($event)"
+        (nuevoTicketSolicitado)="nuevoTicket()"
+        (asignarClienteFacturaSolicitado)="onAsignarClienteFactura()">
       </app-ticket-panel>
     } @else if (cargando()) {
       <div class="cargando-state">
@@ -114,8 +122,8 @@
     <div class="modal-backdrop" (click)="cerrarComun()">
       <div class="modal-box" (click)="$event.stopPropagation()">
         <div class="modal-header">
-          <mat-icon>add_box</mat-icon>
-          <h3>INS - Artículo Común</h3>
+          <mat-icon>{{ comunCantidad < 0 ? 'undo' : 'add_box' }}</mat-icon>
+          <h3>INS - Artículo Común{{ comunCantidad < 0 ? ' (Devolución)' : '' }}</h3>
           <button class="modal-close" (click)="cerrarComun()">
             <mat-icon>close</mat-icon>
           </button>
@@ -133,14 +141,21 @@
           <div class="form-row">
             <div class="form-field">
               <label>Cantidad</label>
-              <input class="form-input" type="number" [(ngModel)]="comunCantidad" min="0.01" step="1">
+              <input class="form-input" type="number" [(ngModel)]="comunCantidad" step="1">
+              <span class="field-hint">Ingresa cantidad negativa para registrar una devolución</span>
             </div>
             <div class="form-field">
               <label>Precio unitario ($) *</label>
               <input class="form-input" type="number" [(ngModel)]="comunPrecio" min="0" step="1" placeholder="0">
             </div>
           </div>
-          @if (comunNombre && comunPrecio > 0) {
+          @if (comunCantidad < 0) {
+            <div class="comun-devolucion-hint">
+              <mat-icon>info</mat-icon>
+              Se agregará como devolución
+            </div>
+          }
+          @if (comunNombre && comunPrecio > 0 && comunCantidad !== 0) {
             <div class="comun-preview">
               <span>Total:</span>
               <strong>{{ (comunCantidad * comunPrecio) | currency:'CLP':'$':'1.0-0' }}</strong>
@@ -149,8 +164,8 @@
         </div>
         <div class="modal-footer">
           <button class="btn-secundario" (click)="cerrarComun()">Cancelar</button>
-          <button class="btn-primario" (click)="agregarComun()" [disabled]="!comunNombre.trim() || comunPrecio <= 0">
-            <mat-icon>add</mat-icon> Agregar
+          <button class="btn-primario" (click)="agregarComun()" [disabled]="!comunNombre.trim() || comunPrecio <= 0 || comunCantidad === 0">
+            <mat-icon>{{ comunCantidad < 0 ? 'undo' : 'add' }}</mat-icon> {{ comunCantidad < 0 ? 'Agregar devolución' : 'Agregar' }}
           </button>
         </div>
       </div>
@@ -175,6 +190,89 @@
             (productoAgregado)="onProductoAgregadoDesdeModal($event)"
             (granelSeleccionado)="onGranelSeleccionadoDesdeModal($event)">
           </app-producto-search>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ===== MODAL: Devolución de producto ===== -->
+  @if (mostrarDevolucion()) {
+    <div class="modal-backdrop" (click)="cerrarDevolucion()">
+      <div class="modal-box modal-buscador" (click)="$event.stopPropagation()">
+        <div class="modal-header modal-header-devolucion">
+          <mat-icon>undo</mat-icon>
+          <h3>Producto Devuelto</h3>
+          <button class="modal-close" (click)="cerrarDevolucion()">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+        <div class="modal-body modal-body-buscador">
+          <app-producto-search
+            [ticketActivo]="ticketActivo()"
+            [modoDevolucion]="true"
+            (devolucionSeleccionada)="onDevolucionSeleccionada($event)">
+          </app-producto-search>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ===== MODAL: Buscar Cotización ===== -->
+  @if (mostrarCotizaciones()) {
+    <div class="modal-backdrop" (click)="cerrarCotizaciones()">
+      <div class="modal-box modal-buscador" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <mat-icon>find_in_page</mat-icon>
+          <h3>Buscar Cotización</h3>
+          <button class="modal-close" (click)="cerrarCotizaciones()">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+        <div class="modal-body modal-body-buscador">
+          <div class="form-field">
+            <input
+              class="form-input"
+              type="text"
+              [(ngModel)]="busquedaCotizacion"
+              placeholder="Buscar por número (COT-...)"
+              autofocus>
+          </div>
+
+          @if (cotizacionesCargando()) {
+            <div class="cot-cargando">Cargando cotizaciones...</div>
+          } @else if (cotizacionesFiltradas.length === 0) {
+            <div class="cot-empty">No hay cotizaciones activas</div>
+          } @else {
+            <table class="cot-tabla">
+              <thead>
+                <tr>
+                  <th>Número</th>
+                  <th>Fecha</th>
+                  <th>Items</th>
+                  <th>Total</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (cot of cotizacionesFiltradas; track cot.id) {
+                  <tr (click)="cargarCotizacion(cot)" class="cot-fila">
+                    <td class="cot-numero">{{ cot.numero }}</td>
+                    <td class="cot-fecha">{{ cot.creada | date:'dd/MM HH:mm' }}</td>
+                    <td class="cot-items">{{ cot.cantidad_items }}</td>
+                    <td class="cot-total">{{ cot.total | currency:'CLP':'$':'1.0-0' }}</td>
+                    <td class="cot-acciones">
+                      <button class="btn-cot-cargar" (click)="cargarCotizacion(cot); $event.stopPropagation()" matTooltip="Cargar al carrito">
+                        <mat-icon>add_shopping_cart</mat-icon>
+                      </button>
+                      <button class="btn-cot-borrar" (click)="eliminarCotizacion(cot, $event)" matTooltip="Eliminar">
+                        <mat-icon>delete_outline</mat-icon>
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
         </div>
       </div>
     </div>

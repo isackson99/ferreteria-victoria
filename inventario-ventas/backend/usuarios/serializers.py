@@ -36,13 +36,21 @@ class RolSerializer(serializers.ModelSerializer):
 
 class UsuarioSerializer(serializers.ModelSerializer):
     rol_nombre = serializers.CharField(source='rol.nombre', read_only=True)
-    password = serializers.CharField(write_only=True, required=False, allow_blank=True, min_length=6)
+    password   = serializers.CharField(write_only=True, required=False, allow_blank=True, min_length=4)
+    permisos   = serializers.SerializerMethodField()
+
+    def get_permisos(self, obj):
+        if obj.is_superuser:
+            return []  # superuser bypasses all checks; el frontend usa is_superuser
+        if obj.rol:
+            return list(obj.rol.permisos.values_list('codigo', flat=True))
+        return []
 
     class Meta:
         model = Usuario
         fields = ['id', 'username', 'email', 'first_name', 'last_name', 'rol', 'rol_nombre',
-                  'is_active', 'is_superuser', 'password']
-        read_only_fields = ['id']
+                  'is_active', 'is_superuser', 'password', 'permisos']
+        read_only_fields = ['id', 'permisos']
 
     def validate_username(self, value):
         return limpiar_texto(value)

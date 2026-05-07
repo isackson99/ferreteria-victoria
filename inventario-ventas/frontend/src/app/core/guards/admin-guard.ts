@@ -6,6 +6,6 @@ export const adminGuard: CanActivateFn = () => {
   const auth = inject(AuthService);
   const router = inject(Router);
   const user = auth.usuarioActual();
-  if (user && (user.is_superuser || user.rol?.nombre === 'Admin')) return true;
+  if (user && (user.is_superuser || user.rol?.nombre?.toLowerCase() === 'admin')) return true;
   return router.createUrlTree(['/ventas']);
 };

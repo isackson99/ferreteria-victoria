@@ -661,7 +661,7 @@ class ResumenVentasView(APIView):
 
         # User filtering
         usuario_id_param = request.query_params.get('usuario_id')
-        is_admin = request.user.is_superuser or (hasattr(request.user, 'rol') and request.user.rol and request.user.rol.nombre == 'Admin')
+        is_admin = request.user.is_superuser or (hasattr(request.user, 'rol') and request.user.rol and request.user.rol.nombre.lower() == 'admin')
         if not is_admin:
             ventas = ventas.filter(usuario=request.user)
             pagos = PagoTicket.objects.filter(ticket__venta__in=ventas)
@@ -766,7 +766,7 @@ class UsuariosReportesView(APIView):
     def get(self, request):
         from ventas.models import Venta
         usuario = request.user
-        is_admin = usuario.is_superuser or (hasattr(usuario, 'rol') and usuario.rol and usuario.rol.nombre == 'Admin')
+        is_admin = usuario.is_superuser or (hasattr(usuario, 'rol') and usuario.rol and usuario.rol.nombre.lower() == 'admin')
         if not is_admin:
             return Response([])
         usuarios = Venta.objects.filter(

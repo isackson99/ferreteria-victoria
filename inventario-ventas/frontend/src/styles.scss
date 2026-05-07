@@ -7,6 +7,7 @@
 
 html {
   height: 100%;
+  font-size: 13px;
   @include mat.theme(
     (
       color: (
@@ -14,25 +15,16 @@ html {
         tertiary: mat.$blue-palette,
       ),
       typography: Roboto,
-      density: 0,
+      density: -3,
     )
   );
 }
 
 body {
-  // Default the application to a light color theme. This can be changed to
-  // `dark` to enable the dark color theme, or to `light dark` to defer to the
-  // user's system settings.
   color-scheme: light;
-
-  // Set a default background, font and text colors for the application using
-  // Angular Material's system-level CSS variables. Learn more about these
-  // variables at https://material.angular.dev/guide/system-variables
   background-color: var(--mat-sys-surface);
   color: var(--mat-sys-on-surface);
   font: var(--mat-sys-body-medium);
-
-  // Reset the user agent margin.
   margin: 0;
   height: 100%;
 }
@@ -61,3 +53,43 @@ th.sortable {
 .snack-advertencia .mat-mdc-snack-bar-label {
   color: white !important;
 }
+
+// ── Densidad global: estilo escritorio compacto ──────────────────────────────
+// density: -3 ya reduce form-fields, buttons y otros vía mat.theme().
+// Los siguientes overrides fuerzan las tablas a 32px (target: ~20 filas/768px).
+
+// Filas de tabla
+.mat-mdc-row {
+  height: 32px !important;
+  min-height: 32px !important;
+}
+.mat-mdc-header-row {
+  height: 36px !important;
+  min-height: 36px !important;
+}
+.mat-mdc-cell,
+.mat-mdc-header-cell {
+  padding: 0 8px !important;
+  font-size: 12px;
+}
+
+// Form fields
+.mat-mdc-form-field { font-size: 13px; }
+
+// Reducir padding interno del input (wrapper MDC)
+.mat-mdc-text-field-wrapper { padding: 0 8px !important; }
+.mat-mdc-form-field-infix {
+  padding-top: 6px !important;
+  padding-bottom: 6px !important;
+  min-height: 36px !important;
+}
+
+// Paginator compacto
+.mat-mdc-paginator { font-size: 12px; }
+.mat-mdc-paginator-container { min-height: 40px !important; padding: 0 8px !important; }
+
+// Dialogs: sin padding excesivo
+.mat-mdc-dialog-surface { padding: 0 !important; }
+
+// Snackbar
+.mat-mdc-snack-bar-container { font-size: 13px; }

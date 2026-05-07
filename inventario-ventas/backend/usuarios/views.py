@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from django.contrib.auth import authenticate, login, logout
 from .models import Usuario, Rol, Permiso
 from .serializers import UsuarioSerializer, RolSerializer, PermisoSerializer, LoginSerializer
-from .permissions import EsAdmin, PuedeCrearUsuarios
+from .permissions import EsAdmin, PuedeCrearUsuarios, PuedeCrearUsuarioPlataforma
 
 
 class AuthViewSet(viewsets.ViewSet):
@@ -12,18 +12,23 @@ class AuthViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=['post'])
     def login(self, request):
+        from logs.views import log_evento
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        username = serializer.validated_data['username']
         user = authenticate(
             request,
-            username=serializer.validated_data['username'],
+            username=username,
             password=serializer.validated_data['password']
         )
         if not user:
+            log_evento(request, 'ACCESO', 'auth', f'Login fallido: {username}', nivel='WARNING')
             return Response({'error': 'Credenciales incorrectas.'}, status=400)
         if not user.is_active:
+            log_evento(request, 'ACCESO', 'auth', f'Login bloqueado (inactivo): {username}', nivel='WARNING')
             return Response({'error': 'Usuario inactivo.'}, status=403)
         login(request, user)
+        log_evento(request, 'ACCESO', 'auth', f'Login exitoso: {username}', nivel='INFO')
         return Response(UsuarioSerializer(user).data)
 
     @action(detail=False, methods=['post'], permission_classes=[permissions.IsAuthenticated])
@@ -42,8 +47,42 @@ class UsuarioViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action in ['create', 'destroy', 'update', 'partial_update']:
-            return [PuedeCrearUsuarios()]
+            return [PuedeCrearUsuarioPlataforma()]
         return [EsAdmin()]
+
+    def perform_create(self, serializer):
+        instance = serializer.save()
+        try:
+            from logs.views import log_evento
+            log_evento(self.request, 'ACCESO', 'usuarios',
+                       f'Usuario creado: {instance.username} (rol: {instance.rol.nombre if instance.rol else "sin rol"})',
+                       datos_extra={'id': instance.id, 'username': instance.username,
+                                    'rol': instance.rol.nombre if instance.rol else None})
+        except Exception:
+            pass
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        try:
+            from logs.views import log_evento
+            changed = list(serializer.validated_data.keys())
+            log_evento(self.request, 'ACCESO', 'usuarios',
+                       f'Usuario editado: {instance.username} — campos: {", ".join(changed)}',
+                       datos_extra={'id': instance.id, 'username': instance.username, 'campos': changed})
+        except Exception:
+            pass
+
+    def perform_destroy(self, instance):
+        username = instance.username
+        instance.delete()
+        try:
+            from logs.views import log_evento
+            log_evento(self.request, 'ACCESO', 'usuarios',
+                       f'Usuario eliminado: {username}',
+                       nivel='WARNING',
+                       datos_extra={'username': username})
+        except Exception:
+            pass
 
 
 class PermisoViewSet(viewsets.ModelViewSet):

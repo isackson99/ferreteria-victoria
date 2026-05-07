@@ -198,14 +198,17 @@
               Permisos de: {{ rolSeleccionado()!.nombre }}
             </div>
             <div class="permisos-grid">
-              @for (p of permisos(); track p.id) {
-                <label class="permiso-row">
-                  <input type="checkbox" [ngModel]="tienePermiso(p.id)" (ngModelChange)="togglePermiso(p.id)">
-                  <div class="permiso-info">
-                    <span class="permiso-codigo">{{ p.codigo }}</span>
-                    <span class="permiso-desc">{{ p.descripcion }}</span>
-                  </div>
-                </label>
+              @for (grupo of permisosAgrupados(); track grupo.titulo) {
+                <div class="permiso-categoria">{{ grupo.titulo }}</div>
+                @for (p of grupo.permisos; track p.id) {
+                  <label class="permiso-row">
+                    <input type="checkbox" [ngModel]="tienePermiso(p.id)" (ngModelChange)="togglePermiso(p.id)">
+                    <div class="permiso-info">
+                      <span class="permiso-desc">{{ p.descripcion }}</span>
+                      <span class="permiso-codigo">{{ p.codigo }}</span>
+                    </div>
+                  </label>
+                }
               }
               @if (permisos().length === 0) {
                 <div class="empty-list">No hay permisos configurados</div>

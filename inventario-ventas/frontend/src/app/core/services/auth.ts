@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { tap, map, catchError } from 'rxjs/operators';
 import { Observable, of } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface Usuario {
   id: number;
@@ -17,7 +18,7 @@ export interface Usuario {
   providedIn: 'root'
 })
 export class AuthService {
-  private baseUrl = 'http://192.168.1.8:8000/api';
+  private baseUrl = environment.baseUrl;
   
   usuarioActual = signal<Usuario | null>(null);
   cargando = signal(false);
@@ -114,7 +115,7 @@ export class AuthService {
   tienePermiso(permiso: string): boolean {
     const usuario = this.usuarioActual();
     if (!usuario) return false;
-    if (usuario.rol?.nombre === 'Admin') return true;
+    if (usuario.rol?.nombre?.toLowerCase() === 'admin') return true;
     return usuario.permisos?.includes(permiso) ?? false;
   }
 }

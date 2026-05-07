@@ -44,7 +44,6 @@ class ProductoSerializer(serializers.ModelSerializer):
     stock_bajo = serializers.BooleanField(read_only=True)
     stock_sobre = serializers.BooleanField(read_only=True)
     kit_componentes = serializers.SerializerMethodField()
-    inventario_actual = serializers.SerializerMethodField()
 
     class Meta:
         model = Producto
@@ -57,10 +56,11 @@ class ProductoSerializer(serializers.ModelSerializer):
             'kit_componentes'
         ]
 
-    def get_inventario_actual(self, obj):
-        if obj.tipo == 'kit':
-            return obj.get_stock_kit()
-        return obj.inventario_actual
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if instance.tipo == 'kit':
+            data['inventario_actual'] = instance.get_stock_kit()
+        return data
 
     def validate_nombre(self, value):
         return limpiar_texto(value)

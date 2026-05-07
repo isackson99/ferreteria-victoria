@@ -17,7 +17,7 @@ class EsAdmin(BasePermission):
         if not request.user.is_authenticated:
             return False
         return request.user.is_superuser or (
-            request.user.rol and request.user.rol.nombre == 'Admin'
+            request.user.rol and request.user.rol.nombre.lower() == 'admin'
         )
 
 
@@ -75,3 +75,24 @@ class PuedeCancelarVentas(BasePermission):
         if not request.user.is_authenticated:
             return False
         return request.user.tiene_permiso('puede_cancelar_ventas')
+
+
+class PuedeCrearClienteCredito(BasePermission):
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+        return request.user.tiene_permiso('puede_crear_cliente_credito')
+
+
+class PuedeCrearClienteFactura(BasePermission):
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+        return request.user.tiene_permiso('puede_crear_cliente_factura')
+
+
+class PuedeCrearUsuarioPlataforma(BasePermission):
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+        return request.user.tiene_permiso('puede_crear_usuario_plataforma')

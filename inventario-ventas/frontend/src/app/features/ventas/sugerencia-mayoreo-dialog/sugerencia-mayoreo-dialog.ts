@@ -59,7 +59,7 @@ export interface SugerenciaMayoreoData {
 
     <mat-dialog-actions align="end">
       <button mat-button (click)="noAplicar()">No aplicar</button>
-      <button mat-raised-button class="btn-aplicar" (click)="aplicar()">
+      <button mat-raised-button class="btn-aplicar" (click)="aplicar()" cdkFocusInitial>
         <mat-icon>check_circle</mat-icon>
         Aplicar Precio Mayoreo
       </button>

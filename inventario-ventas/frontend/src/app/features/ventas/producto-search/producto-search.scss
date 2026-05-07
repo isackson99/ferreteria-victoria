@@ -113,13 +113,51 @@
     &:nth-child(even) { background: #f8f9ff; }
     &:nth-child(even):hover { background: #e8eaf6; }
 
-    &.fila-seleccionada {
+    // Cursor de teclado (navegación con flechas / auto-primer resultado)
+    &.fila-activa {
       background: #c5cae9 !important;
-      outline: 2px solid #3949ab;
+      border-left: 3px solid #3949ab;
+    }
+
+    // Pre-selección confirmada (primer click o primer Enter)
+    &.fila-preseleccionada {
+      background: #fff9c4 !important;
+      outline: 2px solid #f9a825;
       outline-offset: -1px;
+      border-left: 3px solid #f9a825;
     }
   }
 }
+
+// ---- Encabezados ordenables ----
+
+.th-sortable {
+  user-select: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.1s;
+
+  &:hover {
+    background: #546e7a;
+  }
+
+  .sort-icon {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+    vertical-align: middle;
+    margin-left: 4px;
+    opacity: 0.5;
+    transition: opacity 0.15s;
+
+    &.sort-active {
+      opacity: 1;
+      color: #ffeb3b;
+    }
+  }
+}
+
+// ---- Celdas ----
 
 .td-nombre { min-width: 200px; }
 .td-precio { width: 150px; }
@@ -202,6 +240,7 @@
   font-size: 11px;
   color: #757575;
   flex-shrink: 0;
+  flex-wrap: wrap;
 
   kbd {
     background: #e0e0e0;

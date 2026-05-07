@@ -20,7 +20,8 @@
       [ngModel]="busqueda()"
       (ngModelChange)="busqueda.set($event)"
       (keydown)="onKeydown($event)"
-      autocomplete="off">
+      autocomplete="off"
+      cdkFocusInitial>
   </div>
 
   <!-- Listbox -->

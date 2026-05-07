@@ -230,9 +230,9 @@ export class ImpresionService {
     const es58        = this.anchoPapel === '58';
     const anchoMM     = es58 ? '58mm' : '80mm';
     const anchoBody   = es58 ? '50mm' : '72mm';
-    const fontSize    = es58 ? '9px'  : '10px';
-    const fontGrande  = es58 ? '11px' : '13px';
-    const fontTotal   = es58 ? '10px' : '11px';
+    const fontSize    = '13px';
+    const fontGrande  = es58 ? '15px' : '16px';
+    const fontTotal   = '14px';
     const anchoLot    = 3;
     const anchoDesc   = es58 ? 10 : 14;
     const anchoPU     = es58 ? 6  : 8;
@@ -352,7 +352,12 @@ ${this.esc(resumenSubtotal)}${hayFallbackGroup ? '\n' + this.esc(notaFallback.tr
 <meta charset="UTF-8">
 <meta name="viewport" content="width=${anchoMM}">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+  * {
+    margin: 0; padding: 0; box-sizing: border-box;
+    -webkit-font-smoothing: none !important;
+    text-rendering: crisp-edges !important;
+  }
+  pre, div, span { -webkit-text-stroke: 0.2px black; color: #000 !important; }
   html, body {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
@@ -360,15 +365,16 @@ ${this.esc(resumenSubtotal)}${hayFallbackGroup ? '\n' + this.esc(notaFallback.tr
     margin: 0 auto;
     font-family: 'Courier New', Courier, monospace;
     font-size: ${fontSize};
+    font-weight: 700;
     line-height: 1.4;
     color: #000;
   }
   @page { size: ${anchoMM} auto; margin: 4mm 2mm; }
   body { padding: 2mm 0; }
   .centro      { text-align: center; }
-  .negrita     { font-weight: bold; }
+  .negrita     { font-weight: 700; }
   .grande      { font-size: ${fontGrande}; }
-  .total-row   { display: flex; justify-content: space-between; font-weight: bold; font-size: ${fontTotal}; margin: 4px 0; }
+  .total-row   { display: flex; justify-content: space-between; font-weight: 700; font-size: ${fontTotal}; margin: 4px 0; }
   .tabla-prods { font-family: inherit; font-size: inherit; white-space: pre-wrap; word-break: break-all; margin: 2px 0; }
 </style>
 </head>
@@ -376,6 +382,8 @@ ${this.esc(resumenSubtotal)}${hayFallbackGroup ? '\n' + this.esc(notaFallback.tr
   <div class="centro negrita grande">FERRETERIA VICTORIA</div>
   <div class="centro">DIRECCION: OLGA VILLANUEVA 2386</div>
   <div class="centro">COMUNA: VILLA ALEMANA</div>
+  <div class="centro">+56 9 9086 0505</div>
+  <div class="centro">Ferreteriavictoriacrisosto@gmail.com</div>
   <div class="negrita">${clienteNombre.toUpperCase()}</div>
   <div>${this.formatFecha(new Date().toISOString())}</div>
   ${bloques.join('\n')}
@@ -415,9 +423,9 @@ ${this.esc(resumenSubtotal)}${hayFallbackGroup ? '\n' + this.esc(notaFallback.tr
     const es58        = this.anchoPapel === '58';
     const anchoMM     = es58 ? '58mm' : '80mm';
     const anchoBody   = es58 ? '50mm' : '72mm';
-    const fontSize    = es58 ? '9px'  : '10px';
-    const fontGrande  = es58 ? '11px' : '13px';
-    const fontTotal   = es58 ? '10px' : '11px';
+    const fontSize    = '13px';
+    const fontGrande  = es58 ? '15px' : '16px';
+    const fontTotal   = '14px';
     const anchoLot    = 3;
     const anchoDesc   = es58 ? 10 : 14;
     const anchoPU     = es58 ? 6  : 8;
@@ -500,6 +508,8 @@ ${this.esc(resumenSubtotal)}${hayFallbackGroup ? '\n' + this.esc(notaFallback.tr
   <div class="centro negrita grande">FERRETERIA VICTORIA</div>
   <div class="centro">DIRECCION: OLGA VILLANUEVA 2386</div>
   <div class="centro">COMUNA: VILLA ALEMANA</div>
+  <div class="centro">+56 9 9086 0505</div>
+  <div class="centro">Ferreteriavictoriacrisosto@gmail.com</div>
   ${modoLabel ? `<div class="centro negrita modo-lbl">${modoLabel}</div>` : ''}
   <div class="fila"><span>${this.formatFecha(t.fecha)}</span></div>
   <div class="fila"><span>FOLIO:</span><span>${t.numero}</span></div>
@@ -519,7 +529,12 @@ ${this.esc(seccionTotal)}</pre>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=${anchoMM}">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+  * {
+    margin: 0; padding: 0; box-sizing: border-box;
+    -webkit-font-smoothing: none !important;
+    text-rendering: crisp-edges !important;
+  }
+  pre, div, span { -webkit-text-stroke: 0.2px black; color: #000 !important; }
   html, body {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
@@ -527,17 +542,18 @@ ${this.esc(seccionTotal)}</pre>
     margin: 0 auto;
     font-family: 'Courier New', Courier, monospace;
     font-size: ${fontSize};
+    font-weight: 700;
     line-height: 1.4;
     color: #000;
   }
   @page { size: ${anchoMM} auto; margin: 4mm 2mm; }
   body { padding: 2mm 0; }
   .centro      { text-align: center; }
-  .negrita     { font-weight: bold; }
+  .negrita     { font-weight: 700; }
   .grande      { font-size: ${fontGrande}; }
   .modo-lbl    { font-size: ${fontGrande}; margin: 2px 0; }
   .fila        { display: flex; justify-content: space-between; }
-  .total-row   { display: flex; justify-content: space-between; font-weight: bold; font-size: ${fontTotal}; margin: 2px 0; }
+  .total-row   { display: flex; justify-content: space-between; font-weight: 700; font-size: ${fontTotal}; margin: 2px 0; }
   .tabla-prods { font-family: inherit; font-size: inherit; white-space: pre-wrap; word-break: break-all; margin: 2px 0; }
   .ticket-bloque { page-break-after: always; padding-bottom: 4mm; }
 </style>
@@ -557,7 +573,7 @@ ${this.esc(seccionTotal)}</pre>
     desde: string | null; hasta: string; usuario: string; cantidad_tickets: number;
     total_efectivo: number; total_tarjeta: number; total_credito: number; total_mixto: number;
     total_ventas: number; total_entradas: number; total_salidas: number;
-    total_abonos_credito: number; total_devoluciones: number; efectivo_en_caja: number;
+    total_abonos_credito: number; total_devoluciones: number; total_dev_comunes: number; efectivo_en_caja: number;
   }): void {
     this.imprimirDocumento(this.generarHTMLCorte(datos));
   }
@@ -566,13 +582,13 @@ ${this.esc(seccionTotal)}</pre>
     desde: string | null; hasta: string; usuario: string; cantidad_tickets: number;
     total_efectivo: number; total_tarjeta: number; total_credito: number; total_mixto: number;
     total_ventas: number; total_entradas: number; total_salidas: number;
-    total_abonos_credito: number; total_devoluciones: number; efectivo_en_caja: number;
+    total_abonos_credito: number; total_devoluciones: number; total_dev_comunes: number; efectivo_en_caja: number;
   }): string {
     const es58 = this.anchoPapel === '58';
     const anchoMM = es58 ? '58mm' : '80mm';
     const anchoBody = es58 ? '50mm' : '72mm';
-    const fontSize = es58 ? '9px' : '10px';
-    const fontGrande = es58 ? '11px' : '13px';
+    const fontSize = '13px';
+    const fontGrande = es58 ? '15px' : '16px';
     const ancho = es58 ? 28 : 36;
     const sep = '-'.repeat(ancho);
     const sepDoble = '='.repeat(ancho);
@@ -599,6 +615,7 @@ ${this.esc(seccionTotal)}</pre>
       filaPos('Con Tarjeta:', d.total_tarjeta),
       filaPos('A Credito:', d.total_credito),
       ...(d.total_mixto > 0 ? [filaPos('Mixto:', d.total_mixto)] : []),
+      ...(d.total_dev_comunes > 0 ? [fila('Dev.Art.Com.:', '-' + f(d.total_dev_comunes))] : []),
       sep,
       filaPos('TOTAL VENTAS:', d.total_ventas),
       sep,
@@ -621,20 +638,31 @@ ${this.esc(seccionTotal)}</pre>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=${anchoMM}">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+  * {
+    margin: 0; padding: 0; box-sizing: border-box;
+    -webkit-font-smoothing: none !important;
+    text-rendering: crisp-edges !important;
+  }
+  pre, div, span { -webkit-text-stroke: 0.2px black; color: #000 !important; }
   html, body {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
-    width: ${anchoBody};
-    margin: 0 auto;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 2mm 3mm;
     font-family: 'Courier New', Courier, monospace;
     font-size: ${fontSize};
+    font-weight: 700;
     line-height: 1.4;
     color: #000;
   }
-  @page { size: ${anchoMM} auto; margin: 4mm 2mm; }
-  body { padding: 2mm 0; }
-  pre { font-family: inherit; font-size: inherit; white-space: pre-wrap; word-break: break-all; }
+  @page { size: ${anchoMM} auto; margin: 0; padding: 0; }
+  pre { font-family: inherit; font-size: inherit; white-space: pre; }
+  @media print {
+    @page { margin: 0; padding: 0; }
+    body, html { margin: 0; padding: 0; width: 100%; }
+  }
 </style>
 </head>
 <body>
@@ -664,15 +692,15 @@ ${this.esc(seccionTotal)}</pre>
     const es58       = this.anchoPapel === '58';
     const anchoMM    = es58 ? '58mm' : '80mm';
     const anchoBody  = es58 ? '50mm' : '72mm';
-    const fontSize   = es58 ? '9px'  : '10px';
-    const fontGrande = es58 ? '11px' : '13px';
-    const fontTotal  = es58 ? '10px' : '11px';
+    const fontSize   = '12px';
+    const fontGrande = '14px';
+    const fontTotal  = '13px';
     const anchoLot   = es58 ? 2 : 3;
-    const anchoDesc  = es58 ? 13 : 20;
-    const anchoPU    = es58 ? 7 : 8;
-    const anchoImp   = es58 ? 7 : 8;
+    const anchoDesc  = es58 ? 14 : 20;
+    const anchoPU    = es58 ? 7  : 8;
+    const anchoImp   = es58 ? 7  : 8;
     const labelWidth = anchoLot + 1 + anchoDesc + 1 + anchoPU + 1;
-    const anchoTotal = labelWidth + anchoImp;
+    const anchoTotal = labelWidth + anchoImp;      // 80mm → 42ch, 58mm → 33ch
     const sep        = '-'.repeat(anchoTotal);
     const totalItems = d.productos.reduce((s, p) => s + Number(p.cantidad), 0);
     const formato    = this.formatoDescripcion;
@@ -741,20 +769,29 @@ ${this.esc(seccionTotal)}</pre>
 <html>
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=${anchoMM}">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+  * {
+    margin: 0; padding: 0; box-sizing: border-box;
+    -webkit-font-smoothing: none !important;
+    text-rendering: crisp-edges !important;
+  }
+  pre, div, span { -webkit-text-stroke: 0.2px black; color: #000 !important; }
 
   html, body {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
-    width: ${anchoBody};
+    -webkit-font-smoothing: none;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    color: #000 !important;
+    width: ${anchoTotal}ch;
     margin: 0 auto;
     padding: 0;
-    font-family: 'Courier New', Courier, monospace;
+    font-family: 'Consolas', 'Monaco', 'Lucida Console', monospace;
     font-size: ${fontSize};
+    font-weight: 700;
     line-height: 1.4;
-    color: #000;
   }
 
   @page {
@@ -767,11 +804,12 @@ ${this.esc(seccionTotal)}</pre>
   }
 
   .centro      { text-align: center; }
-  .negrita     { font-weight: bold; }
   .grande      { font-size: ${fontGrande}; }
   .separador   { margin: 3px 0; }
   .copia-lbl   { font-size: ${fontGrande}; margin: 2px 0; border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 1px 0; }
   .total-grande { font-size: ${fontGrande}; }
+
+  .negrita, .grande, .total-grande, b, strong { font-weight: 900 !important; }
 
   .fila {
     display: flex;
@@ -781,17 +819,25 @@ ${this.esc(seccionTotal)}</pre>
   .total-row {
     display: flex;
     justify-content: space-between;
-    font-weight: bold;
+    font-weight: 700;
     font-size: ${fontTotal};
     margin: 2px 0;
   }
 
+  pre, div {
+    text-shadow: 0.1pt 0.1pt 0.1pt #000;
+  }
+
   .tabla-prods {
-    font-family: inherit;
+    font-family: 'Consolas', 'Monaco', 'Lucida Console', monospace;
     font-size: inherit;
-    white-space: pre-wrap;
-    word-break: break-all;
+    font-weight: 700;
+    white-space: pre;
     margin: 2px 0;
+  }
+
+  @media print {
+    html, body { margin: 0; padding: 0; }
   }
 </style>
 </head>
@@ -799,6 +845,8 @@ ${this.esc(seccionTotal)}</pre>
   <div class="centro negrita grande">FERRETERIA VICTORIA</div>
   <div class="centro">DIRECCION: OLGA VILLANUEVA 2386</div>
   <div class="centro">COMUNA: VILLA ALEMANA</div>
+  <div class="centro">+56 9 9086 0505</div>
+  <div class="centro">Ferreteriavictoriacrisosto@gmail.com</div>
   ${copiaLabel}
   <div class="separador">${sep}</div>
   <div class="fila"><span>${this.formatFecha(d.fecha)}</span></div>

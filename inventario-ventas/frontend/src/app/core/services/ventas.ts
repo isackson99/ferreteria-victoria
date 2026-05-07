@@ -174,6 +174,63 @@ export class VentasService {
     });
   }
 
+  // Ventas del día (modal historial)
+  getVentasDelDia(fecha?: string, cajeroId?: number): Observable<any> {
+    const params: any = {};
+    if (fecha) params['fecha'] = fecha;
+    if (cajeroId) params['cajero_id'] = cajeroId;
+    return this.api.get<any>('ventas/ventas_del_dia/', params);
+  }
+
+  // Devolución parcial de ítem desde modal historial
+  devolverItem(ventaId: number, itemId: number, cantidad: number): Observable<any> {
+    return this.api.post<any>(`ventas/${ventaId}/devolver_item/`, { item_id: itemId, cantidad });
+  }
+
+  // Clausurar venta completada
+  clausurarVenta(ventaId: number): Observable<any> {
+    return this.api.post<any>(`ventas/${ventaId}/clausurar/`, {});
+  }
+
+  // Agregar descuento en carrito activo (precio negativo)
+  agregarDescuento(ventaId: number, monto: number, porcentaje: number): Observable<Venta> {
+    return this.api.post<Venta>(`ventas/${ventaId}/agregar_descuento/`, { monto, porcentaje });
+  }
+
+  // Agregar devolución en carrito activo (cantidad negativa)
+  agregarDevolucion(ventaId: number, productoId: number, cantidad: number, precio: number): Observable<Venta> {
+    return this.api.post<Venta>(`ventas/${ventaId}/agregar_devolucion/`, {
+      producto_id: productoId, cantidad, precio,
+    });
+  }
+
+  // Confirmar ticket mixto con devoluciones
+  confirmarDevolucion(ventaId: number, datos: { metodo: string; monto_recibido?: number }): Observable<any> {
+    return this.api.post<any>(`ventas/${ventaId}/confirmar_devolucion/`, datos);
+  }
+
+  // Actualizar cantidad de ítem granel (PATCH)
+  actualizarItem(ventaId: number, itemId: number, cantidad: number): Observable<Venta> {
+    return this.api.patch<Venta>(`ventas/${ventaId}/actualizar_item/${itemId}/`, { cantidad });
+  }
+
+  // Cotizaciones
+  crearCotizacion(ventaId: number): Observable<any> {
+    return this.api.post<any>('cotizaciones/crear_desde_ticket/', { venta_id: ventaId });
+  }
+
+  getCotizaciones(): Observable<any[]> {
+    return this.api.get<any[]>('cotizaciones/');
+  }
+
+  cargarCotizacion(cotizacionId: number, ventaId: number): Observable<any> {
+    return this.api.post<any>(`cotizaciones/${cotizacionId}/cargar_al_carrito/`, { venta_id: ventaId });
+  }
+
+  eliminarCotizacion(cotizacionId: number): Observable<any> {
+    return this.api.delete<any>(`cotizaciones/${cotizacionId}/`);
+  }
+
   ticketActivo$ = new BehaviorSubject<Venta | null>(null);
 
   setTicketActivo(ticket: Venta): void {

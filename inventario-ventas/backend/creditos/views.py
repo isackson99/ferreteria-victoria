@@ -29,6 +29,7 @@ class CuentaCreditoViewSet(viewsets.ReadOnlyModelViewSet):
                 'error': f'El monto excede la deuda actual de ${cuenta.saldo_usado:,.0f}'
             }, status=400)
 
+        saldo_anterior = float(cuenta.saldo_usado)
         with transaction.atomic():
             cuenta.saldo_usado -= data['monto']
             cuenta.save()
@@ -59,6 +60,29 @@ class CuentaCreditoViewSet(viewsets.ReadOnlyModelViewSet):
             except TipoNotificacion.DoesNotExist:
                 pass
 
+        try:
+            from logs.views import log_evento
+            saldo_nuevo = float(cuenta.saldo_usado)
+            pagado_completo = saldo_nuevo <= 0
+            nivel = 'INFO'
+            descripcion = (
+                f'Abono: {cuenta.cliente.nombre} — ${float(data["monto"]):,.0f} '
+                f'(saldo: ${saldo_anterior:,.0f} → ${saldo_nuevo:,.0f})'
+                + (' — LIQUIDADO' if pagado_completo else '')
+            )
+            log_evento(request, 'CREDITO', 'creditos',
+                       descripcion,
+                       nivel=nivel,
+                       datos_extra={
+                           'cliente': cuenta.cliente.nombre,
+                           'monto_abono': float(data['monto']),
+                           'saldo_anterior': saldo_anterior,
+                           'saldo_nuevo': saldo_nuevo,
+                           'liquidado': pagado_completo,
+                           'metodo_pago': data.get('metodo_pago', 'efectivo'),
+                       })
+        except Exception:
+            pass
         return Response(CuentaCreditoSerializer(cuenta).data)
 
     @action(detail=True, methods=['get'])

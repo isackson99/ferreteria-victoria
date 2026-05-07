@@ -7,6 +7,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { NavbarComponent } from '../../shared/components/navbar/navbar';
 import { ClientesFacturaService, ClienteFactura } from '../../core/services/clientes-factura';
+import { AuthService } from '../../core/services/auth';
 
 @Component({
   selector: 'app-clientes',
@@ -25,8 +26,13 @@ import { ClientesFacturaService, ClienteFactura } from '../../core/services/clie
 })
 export class ClientesComponent implements OnInit {
 
-  private service  = inject(ClientesFacturaService);
-  private snackBar = inject(MatSnackBar);
+  private service    = inject(ClientesFacturaService);
+  private snackBar   = inject(MatSnackBar);
+  private authService = inject(AuthService);
+
+  puedeCrearClienteFactura = computed(() =>
+    this.authService.tienePermiso('puede_crear_cliente_factura')
+  );
 
   // ── Estado ──────────────────────────────────────────────
   clientes     = signal<ClienteFactura[]>([]);
@@ -275,6 +281,15 @@ export class ClientesComponent implements OnInit {
 
   cancelarEliminar(): void {
     this.mostrarConfirm = false;
+  }
+
+  // ── Importar Excel ───────────────────────────────────────
+  onImportarExcel(event: Event): void {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    // TODO: implementar lectura con SheetJS y envío al backend
+    this.snackBar.open(`Archivo seleccionado: ${file.name}`, '', { duration: 2500 });
+    (event.target as HTMLInputElement).value = '';
   }
 
   // ── Exportar CSV ─────────────────────────────────────────

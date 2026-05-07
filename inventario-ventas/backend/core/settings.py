@@ -6,9 +6,9 @@ import os
 load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-SECRET_KEY = os.getenv('SECRET_KEY', 'clave-temporal-cambiar-en-produccion')
-DEBUG = True
-ALLOWED_HOSTS = ['*']  # red local, permite cualquier IP
+SECRET_KEY = os.getenv('SECRET_KEY')
+DEBUG = os.getenv('DEBUG', 'False') == 'True'
+ALLOWED_HOSTS = [h.strip() for h in os.getenv('ALLOWED_HOSTS', '*').split(',')]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -24,6 +24,7 @@ INSTALLED_APPS = [
     'channels',
     'django_filters',
     'django_apscheduler',
+    'dbbackup',
     # Apps propias
     'usuarios.apps.UsuariosConfig',
     'productos.apps.ProductosConfig',
@@ -33,10 +34,12 @@ INSTALLED_APPS = [
     'notificaciones.apps.NotificacionesConfig',
     'tareas.apps.TareasConfig',
     'reportes.apps.ReportesConfig',
+    'logs.apps.LogsConfig',
 ]
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',  # debe ir primeroPython: Select Interpreter
+    'corsheaders.middleware.CorsMiddleware',  # debe ir primero
+    'logs.middleware.LogErrorMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -54,8 +57,12 @@ ASGI_APPLICATION = 'core.asgi.application'  # para Channels
 # Base de datos (SQLite ahora, fácil migrar a PostgreSQL)
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('DB_NAME'),
+        'USER': os.getenv('DB_USER'),
+        'PASSWORD': os.getenv('DB_PASSWORD'),
+        'HOST': os.getenv('DB_HOST'),
+        'PORT': os.getenv('DB_PORT'),
     }
 }
 
@@ -64,7 +71,7 @@ CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            'hosts': [('127.0.0.1', 6379)],
+            'hosts': [os.getenv('REDIS_URL')],
         },
     },
 }
@@ -170,4 +177,20 @@ LOGGING = {
             'propagate': False,
         },
     },
+}
+
+# Backup
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+    "dbbackup": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+        "OPTIONS": {
+            "location": str(BASE_DIR / 'backups')
+        }
+    }
 }

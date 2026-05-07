@@ -5,9 +5,11 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { VentasService, Venta, DetalleVenta, Producto } from '../../../core/services/ventas';
 import { ImpresionService, DatosTicket } from '../../../core/services/impresion';
 import { CreditosService, ClienteCredito } from '../../../core/services/creditos';
+import { VentasDelDiaDialogComponent } from '../ventas-del-dia-dialog/ventas-del-dia-dialog';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -20,6 +22,7 @@ import { Subscription } from 'rxjs';
     MatIconModule,
     MatSnackBarModule,
     MatTooltipModule,
+    MatDialogModule,
   ],
   templateUrl: './ticket-panel.html',
   styleUrl: './ticket-panel.scss'
@@ -31,6 +34,8 @@ export class TicketPanelComponent implements OnInit, OnDestroy {
   @Output() ticketCompletado = new EventEmitter<number>();
   @Output() accionRealizada = new EventEmitter<void>();
   @Output() sugerirMayoreo = new EventEmitter<{ item: DetalleVenta; ventaId: number }>();
+  @Output() nuevoTicketSolicitado = new EventEmitter<void>();
+  @Output() asignarClienteFacturaSolicitado = new EventEmitter<void>();
 
   ticket: Venta | null = null;
   items = signal<DetalleVenta[]>([]);
@@ -38,9 +43,13 @@ export class TicketPanelComponent implements OnInit, OnDestroy {
 
   itemSeleccionadoId = signal<number | null>(null);
   itemConfirmandoEliminacion = signal<number | null>(null);
+  itemResaltadoId = signal<number | null>(null);
 
   // Cobro modal
   mostrarCobro = signal(false);
+
+  // Última venta completada
+  ultimaVenta = signal<{ total: number; pagoCon: number; cambio: number } | null>(null);
 
   // Dialog reimprimir (cliente factura)
   dialogReimprimir = signal(false);
@@ -65,14 +74,19 @@ export class TicketPanelComponent implements OnInit, OnDestroy {
 
   private sub!: Subscription;
 
+  // Devolución en carrito (confirmar devolucion modal)
+  mostrarConfirmarDevolucion = signal(false);
+
   constructor(
     private ventasService: VentasService,
     private impresionService: ImpresionService,
     private snackBar: MatSnackBar,
     private creditosService: CreditosService,
+    private dialog: MatDialog,
   ) {}
 
   ngOnInit(): void {
+    this.cargarUltimaVenta();
     this.sub = this.ventasService.ticketActivo$.subscribe(ticket => {
       if (!ticket) return;
       const cambioTicket = this.ticket?.id !== ticket.id;
@@ -98,7 +112,61 @@ export class TicketPanelComponent implements OnInit, OnDestroy {
     this.sub?.unsubscribe();
   }
 
+  private cargarUltimaVenta(): void {
+    this.ventasService.ultimoTicket().subscribe({
+      next: data => {
+        const venta = data.venta;
+        const pagos: any[] = data.pagos ?? [];
+        let pagoCon = 0;
+        let cambio = 0;
+        if (pagos.length > 0) {
+          const pago = pagos[0];
+          if (pago.metodo === 'efectivo') {
+            pagoCon = Number(pago.monto_recibido);
+            cambio = Number(pago.vuelto);
+          } else if (pago.metodo === 'mixto') {
+            pagoCon = Number(pago.monto_recibido);
+            cambio = Number(pago.vuelto);
+          } else {
+            pagoCon = Number(venta.total);
+            cambio = 0;
+          }
+        }
+        this.ultimaVenta.set({ total: Number(venta.total), pagoCon, cambio });
+      },
+      error: () => this.ultimaVenta.set(null),
+    });
+  }
+
+  scrollAlUltimo(): void {
+    setTimeout(() => {
+      const container = document.querySelector('.tabla-container') as HTMLElement;
+      if (container) container.scrollTop = container.scrollHeight;
+    }, 100);
+  }
+
+  /** Selecciona, hace scroll y aplica highlight de 1.5s a la fila del item. */
+  resaltarItem(id: number): void {
+    this.itemSeleccionadoId.set(id);
+    this.itemConfirmandoEliminacion.set(null);
+    this.accionRealizada.emit();
+    // Scroll a la fila (puede estar en el medio de la tabla)
+    setTimeout(() => {
+      const el = document.querySelector(`tr[data-item-id="${id}"]`) as HTMLElement;
+      if (el) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }, 50);
+    // Animación highlight: activar y limpiar después de 1.5 s
+    this.itemResaltadoId.set(id);
+    setTimeout(() => {
+      if (this.itemResaltadoId() === id) this.itemResaltadoId.set(null);
+    }, 1500);
+  }
+
   // ---- Selección y borrado de items ----
+
+  hayFilaSeleccionada(): boolean {
+    return this.itemSeleccionadoId() !== null;
+  }
 
   seleccionarItem(id: number): void {
     this.itemSeleccionadoId.set(this.itemSeleccionadoId() === id ? null : id);
@@ -350,7 +418,7 @@ export class TicketPanelComponent implements OnInit, OnDestroy {
   }
 
   confirmarPago(imprimir: boolean): void {
-    if (!this.ticket) return;
+    if (!this.ticket || this.cargando()) return;
     const metodo = this.metodoPago();
 
     if (metodo === 'credito' && !this.clienteCreditoSel()) {
@@ -408,6 +476,7 @@ export class TicketPanelComponent implements OnInit, OnDestroy {
           }
         }
         this.ticketCompletado.emit(ventaActual.id);
+        this.cargarUltimaVenta();
       },
       error: () => {
         this.cargando.set(false);
@@ -503,7 +572,58 @@ export class TicketPanelComponent implements OnInit, OnDestroy {
   }
 
   ventasDia(): void {
-    this.snackBar.open('Módulo en desarrollo', '', { duration: 2000 });
+    this.dialog.open(VentasDelDiaDialogComponent, {
+      width: '90vw',
+      maxWidth: '1200px',
+      height: '90vh',
+      panelClass: 'vdd-dialog-panel',
+    });
+  }
+
+  // ---- Devolver Efectivo (ticket con devoluciones) ----
+
+  get tieneDevolucionesEnCarrito(): boolean {
+    return this.items().some(i => i.precio_tipo === 'devolucion');
+  }
+
+  get totalEsNegativo(): boolean {
+    return this.total() < 0;
+  }
+
+  get totalEsCero(): boolean {
+    return this.total() === 0;
+  }
+
+  abrirConfirmarDevolucion(): void {
+    this.mostrarConfirmarDevolucion.set(true);
+  }
+
+  cerrarConfirmarDevolucion(): void {
+    this.mostrarConfirmarDevolucion.set(false);
+  }
+
+  confirmarDevolverEfectivo(): void {
+    if (!this.ticket || this.cargando()) return;
+    const montoDevolver = Math.abs(this.total());
+    const ventaActual = this.ticket;
+    this.cargando.set(true);
+    this.ventasService.confirmarDevolucion(this.ticket.id, { metodo: 'efectivo', monto_recibido: 0 }).subscribe({
+      next: ticketData => {
+        this.cargando.set(false);
+        this.mostrarConfirmarDevolucion.set(false);
+        if (montoDevolver > 0) {
+          this.snackBar.open(`Devolución de $${montoDevolver.toLocaleString('es-CL')} registrada`, 'OK', { duration: 4000 });
+        } else {
+          this.snackBar.open('Transacción registrada', '', { duration: 2000 });
+        }
+        this.ticketCompletado.emit(ventaActual.id);
+        this.cargarUltimaVenta();
+      },
+      error: err => {
+        this.cargando.set(false);
+        this.snackBar.open(err.error?.error ?? 'Error al procesar', '', { duration: 3000 });
+      }
+    });
   }
 
   // ---- Quitar cliente factura ----
