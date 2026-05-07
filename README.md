@@ -1,3 +1,11 @@
+> ⚠️ **Versión Demostrativa**
+>
+> Este repositorio contiene una **versión demo** del proyecto, publicada con fines
+> de portafolio profesional. La versión en producción puede incluir funcionalidades,
+> configuraciones y datos distintos a los presentados aquí.
+>
+> 📄 Consulta el archivo [LICENSE](./LICENSE) para conocer los términos de uso.
+
 # 🔧 Sistema POS — Ferretería Victoria
 
 > Sistema de punto de venta e inventario en tiempo real desarrollado desde cero para una ferretería real en operación.  
@@ -207,5 +215,15 @@ Ingeniero en Informática — DUOC UC, Viña del Mar
 
 ---
 
-> *Proyecto en desarrollo activo. Algunos módulos pueden estar incompletos o en proceso de refinamiento.*  
-> *Los datos mostrados en capturas son ficticios o han sido anonimizados.*
+## 📜 Licencia y derechos de autor
+
+© 2025 **Isaac Serrano Cuauro**. Todos los derechos reservados.
+
+Este código se publica con fines de **demostración profesional y portafolio**.
+No se autoriza su uso comercial, redistribución ni despliegue en producción
+por terceros sin autorización escrita del autor.
+
+Para consultas sobre licenciamiento o colaboraciones: isaac82015@gmail.com
+
+Esta obra se encuentra protegida por la Ley N° 17.336 sobre Propiedad
+Intelectual de la República de Chile.
