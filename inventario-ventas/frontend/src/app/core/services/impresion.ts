@@ -379,11 +379,11 @@ ${this.esc(resumenSubtotal)}${hayFallbackGroup ? '\n' + this.esc(notaFallback.tr
 </style>
 </head>
 <body>
-  <div class="centro negrita grande">FERRETERIA VICTORIA</div>
-  <div class="centro">DIRECCION: OLGA VILLANUEVA 2386</div>
-  <div class="centro">COMUNA: VILLA ALEMANA</div>
-  <div class="centro">+56 9 9086 0505</div>
-  <div class="centro">Ferreteriavictoriacrisosto@gmail.com</div>
+  <div class="centro negrita grande">POS Demo</div>
+  <div class="centro">DIRECCION: XXXXX</div>
+  <div class="centro">COMUNA: XXXXXX</div>
+  <div class="centro">+56 9 1234 5678</div>
+  <div class="centro">contacto@posdemo.local</div>
   <div class="negrita">${clienteNombre.toUpperCase()}</div>
   <div>${this.formatFecha(new Date().toISOString())}</div>
   ${bloques.join('\n')}
@@ -505,11 +505,11 @@ ${this.esc(resumenSubtotal)}${hayFallbackGroup ? '\n' + this.esc(notaFallback.tr
       const claseBloque = esUltimo ? '' : ' class="ticket-bloque"';
 
       return `<div${claseBloque}>
-  <div class="centro negrita grande">FERRETERIA VICTORIA</div>
-  <div class="centro">DIRECCION: OLGA VILLANUEVA 2386</div>
-  <div class="centro">COMUNA: VILLA ALEMANA</div>
-  <div class="centro">+56 9 9086 0505</div>
-  <div class="centro">Ferreteriavictoriacrisosto@gmail.com</div>
+  <div class="centro negrita grande">POS Demo</div>
+  <div class="centro">DIRECCION: XXXXX</div>
+  <div class="centro">COMUNA: XXXXXX</div>
+  <div class="centro">+56 9 1234 5678</div>
+  <div class="centro">contacto@posdemo.local</div>
   ${modoLabel ? `<div class="centro negrita modo-lbl">${modoLabel}</div>` : ''}
   <div class="fila"><span>${this.formatFecha(t.fecha)}</span></div>
   <div class="fila"><span>FOLIO:</span><span>${t.numero}</span></div>
@@ -603,7 +603,7 @@ ${this.esc(seccionTotal)}</pre>
     const fechaDesde = d.desde ? this.formatFecha(d.desde) : 'Inicio';
 
     const lines = [
-      this.centrar('FERRETERIA VICTORIA', ancho),
+      this.centrar('POS Demo', ancho),
       this.centrar('CORTE DE CAJA', ancho),
       sep,
       fila('Cajero:', d.usuario.toUpperCase()),
@@ -842,11 +842,11 @@ ${this.esc(seccionTotal)}</pre>
 </style>
 </head>
 <body>
-  <div class="centro negrita grande">FERRETERIA VICTORIA</div>
-  <div class="centro">DIRECCION: OLGA VILLANUEVA 2386</div>
-  <div class="centro">COMUNA: VILLA ALEMANA</div>
-  <div class="centro">+56 9 9086 0505</div>
-  <div class="centro">Ferreteriavictoriacrisosto@gmail.com</div>
+  <div class="centro negrita grande">POS Demo</div>
+  <div class="centro">DIRECCION: XXXXX</div>
+  <div class="centro">COMUNA: XXXXXX</div>
+  <div class="centro">+56 9 1234 5678</div>
+  <div class="centro">contacto@posdemo.local</div>
   ${copiaLabel}
   <div class="separador">${sep}</div>
   <div class="fila"><span>${this.formatFecha(d.fecha)}</span></div>

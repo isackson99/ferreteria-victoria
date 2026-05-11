@@ -615,8 +615,8 @@ export class CreditosComponent implements OnInit {
 </style>
 </head>
 <body>
-  <div class="centro negrita">FERRETERIA VICTORIA</div>
-  <div class="centro">OLGA VILLANUEVA 2386 · VILLA ALEMANA</div>
+  <div class="centro negrita">POS Demo</div>
+  <div class="centro">DIRECCIÓN · COMUNA</div>
   <div class="sep">${sep}</div>
   <div class="centro">ESTADO DE CUENTA</div>
   <div class="centro negrita">* ${cliente.nombre.toUpperCase()} *</div>
@@ -628,7 +628,7 @@ export class CreditosComponent implements OnInit {
   <div class="sep">${sep}</div>
   <div class="saldo-row"><span>SALDO PENDIENTE:</span><span>${this.formatCLP(saldoPendiente)}</span></div>
   <div class="sep">${sep}</div>
-  <div class="centro">FERRETERIA VICTORIA</div>
+  <div class="centro">POS Demo</div>
 <script>window.onload = function() { window.print(); };</script>
 </body>
 </html>`;

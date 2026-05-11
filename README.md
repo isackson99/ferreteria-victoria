@@ -6,7 +6,7 @@
 >
 > 📄 Consulta el archivo [LICENSE](./LICENSE) para conocer los términos de uso.
 
-# 🏪 Ferretería Victoria - POS DEMO
+# 🏪 POS Demo
 
 Una **solución de Punto de Venta (POS) e Inventario** completa, desarrollada para tiendas de hardware.
 
@@ -29,7 +29,7 @@ Este es un **proyecto de demostración** que muestra todas las funcionalidades d
 |-------|-----------|
 | Backend | Django 4.x, Django REST Framework, Django Channels |
 | Frontend | Angular 21, Angular Material, Chart.js |
-| Database | PostgreSQL 15 |
+| Database | SQLite 3 |
 | Realtime | Redis + WebSocket |
 | Deployment | Docker + Docker Compose |
 
@@ -98,7 +98,7 @@ http://localhost:4200
 
 ## 🏗️ Estructura del Proyecto
 ```
-ferreteria-victoria-pos-demo/
+pos-demo/
 │
 ├── README.md                    # Este archivo
 ├── DEMO.md                      # Guía de uso y casos de ejemplo
@@ -162,10 +162,10 @@ Este proyecto está bajo la licencia [MIT](./LICENSE).
 
 ## 👤 Autor
 
-Desarrollado por Isaac Kson
+Desarrollado por el equipo POS Demo
 
-- GitHub: [@isackson99](https://github.com/isackson99)
-- Email: isaac82015@gmail.com
+- GitHub: [@tu-usuario](https://github.com/tu-usuario)
+- Email: contacto@posdemo.local
 
 ---
 
