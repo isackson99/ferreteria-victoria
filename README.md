@@ -98,33 +98,71 @@ http://localhost:4200
 
 ## 🏗️ Estructura del Proyecto
 ferreteria-victoria-pos-demo/
-├── backend/               # Django REST API
-│   ├── ferreteria/        # Django project settings
-│   ├── apps/
-│   │   ├── ventas/        # Sales module
-│   │   ├── inventario/    # Inventory
-│   │   ├── clientes/      # Clients
-│   │   ├── creditos/      # Credit management
-│   │   ├── usuarios/      # Users & permissions
-│   │   └── ...
-│   ├── fixtures/          # Demo data
-│   └── Dockerfile
 │
-├── frontend/              # Angular 21 app
+├── README.md                    # Este archivo
+├── DEMO.md                      # Guía de uso y casos de ejemplo
+├── LICENSE                      # Licencia MIT
+├── .env.example                 # Variables de entorno (sin secretos)
+├── .gitignore                   # Archivos ignorados por Git
+├── docker-compose.yml           # Orquestación de servicios
+│
+├── backend/                     # Django REST API
+│   ├── ferreteria/              # Django project settings
+│   │   ├── settings.py
+│   │   ├── asgi.py
+│   │   └── urls.py
+│   │
+│   ├── apps/                    # Módulos de negocio
+│   │   ├── ventas/              # Módulo de Ventas
+│   │   ├── inventario/          # Gestión de Inventario
+│   │   ├── clientes/            # Gestión de Clientes
+│   │   ├── creditos/            # Créditos y Cuentas Corrientes
+│   │   ├── usuarios/            # Usuarios y Permisos
+│   │   └── ...
+│   │
+│   ├── fixtures/                # Datos de demostración
+│   │   └── demo_data.json
+│   │
+│   ├── Dockerfile
+│   ├── entrypoint.sh            # Script de inicialización
+│   ├── requirements.txt
+│   ├── manage.py
+│   └── load_demo_data.py        # Carga datos demo
+│
+├── frontend/                    # Angular 21 Application
 │   ├── src/
-│   │   ├── app/
+│   │   ├── app/                 # Componentes y módulos
 │   │   │   ├── ventas/
 │   │   │   ├── inventario/
+│   │   │   ├── clientes/
 │   │   │   └── ...
-│   │   ├── assets/
-│   │   └── environments/
+│   │   │
+│   │   ├── assets/              # Imágenes, íconos
+│   │   │
+│   │   └── environments/        # Configuraciones por ambiente
+│   │       ├── environment.ts
+│   │       └── environment.demo.ts
+│   │
 │   ├── Dockerfile
-│   └── package.json
+│   ├── package.json
+│   ├── angular.json
+│   └── docker-compose.yml       # (composición local)
 │
-├── docker-compose.yml
-├── .env.example
-└── README.md (this file)
+└── .github/                     # Configuración de GitHub (opcional)
+└── workflows/               # CI/CD (si se implementa)
+
 ---
+
+### **Explicación de estructura:**
+
+| Directorio | Descripción |
+|-----------|-----------|
+| **backend/** | API REST con Django + DRF |
+| **frontend/** | Aplicación Angular 21 |
+| **backend/apps/** | Módulos: ventas, inventario, clientes, créditos, usuarios |
+| **frontend/src/environments/** | Configuración por ambiente (dev, demo, prod) |
+| **backend/fixtures/** | Datos de demostración para la BD |
+| **docker-compose.yml** | Orquesta todos los servicios |
 
 ## 🐛 Reportar Issues
 
@@ -144,7 +182,7 @@ Este proyecto está bajo la licencia [MIT](./LICENSE).
 Desarrollado por Isaac Kson
 
 - GitHub: [@isackson99](https://github.com/isackson99)
-- Email: tu-email@example.com
+- Email: isaac82015@gmail.com
 
 ---
 
