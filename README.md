@@ -97,6 +97,7 @@ http://localhost:4200
 ---
 
 ## 🏗️ Estructura del Proyecto
+```
 ferreteria-victoria-pos-demo/
 │
 ├── README.md                    # Este archivo
@@ -150,7 +151,7 @@ ferreteria-victoria-pos-demo/
 │
 └── .github/                     # Configuración de GitHub (opcional)
 └── workflows/               # CI/CD (si se implementa)
-
+```
 ---
 
 ### **Explicación de estructura:**
