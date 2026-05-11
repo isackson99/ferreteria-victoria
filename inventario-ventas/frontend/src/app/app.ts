@@ -4,6 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { InactividadService } from './core/services/inactividad';
 import { AuthService } from './core/services/auth';
+import { environment } from '../environments/environment';
 
 @Component({
   selector: 'app-root',
@@ -18,6 +19,7 @@ export class App implements OnInit {
   private snackBar    = inject(MatSnackBar);
   private router      = inject(Router);
 
+  private apiBaseUrl = environment.baseUrl;
   private yaVerificado = false;
 
   constructor() {
@@ -37,7 +39,7 @@ export class App implements OnInit {
   }
 
   private verificarProductosSinCosto(): void {
-    this.http.get<{ count: number }>('http://192.168.1.8:8000/api/productos/sin_costo/').subscribe({
+    this.http.get<{ count: number }>(`${this.apiBaseUrl}/productos/sin_costo/`).subscribe({
       next: (res) => {
         if (res.count > 0) {
           const ref = this.snackBar.open(

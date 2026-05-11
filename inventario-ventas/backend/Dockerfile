@@ -6,14 +6,17 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y \
     gcc \
     postgresql-client \
+    netcat-openbsd \
     && rm -rf /var/lib/apt/lists/*
 
 # Instalar dependencias Python
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copiar código
+# Copiar código y entrypoint
 COPY . .
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
 
 # Crear carpeta de backups
 RUN mkdir -p backups
@@ -21,5 +24,5 @@ RUN mkdir -p backups
 # Exponer puerto
 EXPOSE 8000
 
-# Comando de inicio
-CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "core.asgi:application"]
+# Usar entrypoint
+ENTRYPOINT ["/app/entrypoint.sh"]

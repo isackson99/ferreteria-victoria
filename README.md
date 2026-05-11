@@ -6,224 +6,159 @@
 >
 > 📄 Consulta el archivo [LICENSE](./LICENSE) para conocer los términos de uso.
 
-# 🔧 Sistema POS — Ferretería Victoria
+# 🏪 Ferretería Victoria - POS DEMO
 
-> Sistema de punto de venta e inventario en tiempo real desarrollado desde cero para una ferretería real en operación.  
-> Reemplaza un software comercial de pago por una solución propia, personalizada y moderna.
+Una **solución de Punto de Venta (POS) e Inventario** completa, desarrollada para tiendas de hardware.
 
----
+Este es un **proyecto de demostración** que muestra todas las funcionalidades del sistema.
 
-## 📌 Descripción
+## ✨ Features
 
-Sistema fullstack completo que gestiona ventas, inventario, créditos, clientes y reportes en tiempo real. Diseñado para operar en red local con múltiples cajeros simultáneos, impresión térmica directa y sincronización instantánea mediante WebSockets.
+- ✅ **Módulo de Ventas**: mayoreo, descuentos, devoluciones, pago múltiple
+- ✅ **Inventario**: gestión de stock, ajustes, reportes
+- ✅ **Clientes & Créditos**: gestión de clientes, créditos y cuentas corrientes
+- ✅ **Corte de Caja**: cierre de turno, reportes de venta diaria
+- ✅ **Reportes**: ventas, inventario, movimientos
+- ✅ **Usuarios & Permisos**: roles granulares (Admin, Vendedor, Gerente)
+- ✅ **Notificaciones en tiempo real**: WebSocket con Django Channels
+- ✅ **Impresora térmica**: compatible con 80mm y 58mm
 
-No es un ejercicio académico — está siendo desarrollado para una ferretería real con operación diaria, reemplazando software comercial de pago.
+## 🛠️ Tech Stack
 
----
+| Layer | Tecnología |
+|-------|-----------|
+| Backend | Django 4.x, Django REST Framework, Django Channels |
+| Frontend | Angular 21, Angular Material, Chart.js |
+| Database | PostgreSQL 15 |
+| Realtime | Redis + WebSocket |
+| Deployment | Docker + Docker Compose |
 
-## 📸 Capturas del sistema
+## 🚀 Quick Start (3 pasos)
 
-> *Próximamente — capturas del módulo de ventas, inventario y reportes.*
+### Prerequisitos
+- Docker y Docker Compose instalados
+- Git
+- ~2GB de espacio disponible
 
----
+### Pasos
 
-## ✨ Módulos del sistema
-
-| Módulo | Descripción |
-|---|---|
-| **Ventas** | Múltiples tickets simultáneos, búsqueda por código de barras, productos a granel, kits, mayoreo automático, crédito, impresión térmica |
-| **Inventario** | Ajustes, kardex, movimientos, stock crítico, reportes |
-| **Productos** | CRUD completo, kits con componentes, importación masiva desde Excel |
-| **Créditos** | Estado de cuenta, abonos, liquidación, impresión con precios especiales |
-| **Clientes** | Facturación con RUT chileno, integración en tickets |
-| **Reportes** | Gráficos por período, ventas por departamento, forma de pago, ganancia |
-| **Corte de caja** | Resumen de turno, cierre de sesión automático |
-| **Notificaciones** | WebSocket en tiempo real, campana en navbar |
-| **Usuarios** | Roles, permisos, gestión desde frontend |
-| **Configuración** | Impresora térmica (80mm/58mm), precio especial por cliente, seguridad |
-
----
-
-## 🛠️ Stack tecnológico
-
-### Backend
-| Tecnología | Uso |
-|---|---|
-| Python 3.13 + Django 6 | Framework principal |
-| Django REST Framework | API REST |
-| Django Channels + Redis | WebSockets en tiempo real |
-| PostgreSQL | Base de datos en producción |
-| JWT (simplejwt) | Autenticación |
-| Daphne (ASGI) | Servidor de producción |
-| APScheduler | Tareas programadas |
-
-### Frontend
-| Tecnología | Uso |
-|---|---|
-| Angular 21 (standalone) | Framework principal |
-| Angular Material UI | Componentes de interfaz |
-| Chart.js | Gráficos y reportes |
-| Signals + BehaviorSubject | Estado reactivo |
-
-### Infraestructura
-| Tecnología | Uso |
-|---|---|
-| PostgreSQL | Base de datos producción |
-| Redis + WSL | Broker para WebSockets |
-| Git + GitHub | Control de versiones |
-| Red local | Acceso multi-dispositivo simultáneo |
-
----
-
-## 🗂️ Estructura del proyecto
-
+1. **Clonar repositorio**
+```bash
+   git clone https://github.com/tu-usuario/ferreteria-victoria-pos-demo.git
+   cd ferreteria-victoria-pos-demo
 ```
-ferreteria-victoria/
-│
-├── backend/                        # Django + DRF
-│   ├── config/                     # Settings, URLs, ASGI
+
+2. **Levanta la demo con Docker**
+```bash
+   docker-compose up -d
+```
+   *Espera ~30 segundos para que se inicialice todo*
+
+3. **Abre en el navegador**
+http://localhost:4200
+### Credenciales Demo
+- **Usuario**: `admin`
+- **Password**: `demo123`
+
+---
+
+## 📖 Documentación
+
+- [DEMO.md](./DEMO.md) - Guía completa para ejecutar y explorar
+- [SETUP.md](./SETUP.md) - Instalación para desarrolladores (local, sin Docker)
+- [ARCHITECTURE.md](./ARCHITECTURE.md) - Arquitectura y decisiones técnicas
+- [API.md](./API.md) - Documentación de endpoints (Swagger en `/api/docs/`)
+
+---
+
+## 🎮 Prueba la Demo
+
+### Casos de uso para explorar:
+
+1. **Vendedor**: Hacer una venta completa
+   - Escanear productos
+   - Aplicar descuento
+   - Cambiar cantidad
+   - Pagar (efectivo/tarjeta)
+   - Imprimir ticket
+
+2. **Gerente**: Ver reportes
+   - Ventas del día
+   - Productos más vendidos
+   - Movimientos de inventario
+   - Deudas de clientes
+
+3. **Admin**: Gestionar sistema
+   - Crear productos
+   - Ajustar stock
+   - Crear usuarios
+   - Configurar permisos
+
+---
+
+## 🏗️ Estructura del Proyecto
+ferreteria-victoria-pos-demo/
+├── backend/               # Django REST API
+│   ├── ferreteria/        # Django project settings
 │   ├── apps/
-│   │   ├── ventas/                 # Tickets, items, pagos
-│   │   ├── inventario/             # Movimientos, kardex
-│   │   ├── productos/              # CRUD, kits, importación
-│   │   ├── creditos/               # Estado de cuenta, abonos
-│   │   ├── clientes/               # RUT, facturación
-│   │   ├── reportes/               # Gráficos, cierres
-│   │   ├── usuarios/               # Roles, permisos
-│   │   └── notificaciones/         # WebSocket, campana
-│   └── requirements.txt
+│   │   ├── ventas/        # Sales module
+│   │   ├── inventario/    # Inventory
+│   │   ├── clientes/      # Clients
+│   │   ├── creditos/      # Credit management
+│   │   ├── usuarios/      # Users & permissions
+│   │   └── ...
+│   ├── fixtures/          # Demo data
+│   └── Dockerfile
 │
-├── frontend/                       # Angular 21
+├── frontend/              # Angular 21 app
 │   ├── src/
 │   │   ├── app/
-│   │   │   ├── modules/            # Ventas, inventario, reportes...
-│   │   │   ├── shared/             # Componentes reutilizables
-│   │   │   ├── core/               # Guards, interceptores, servicios
-│   │   │   └── environments/
+│   │   │   ├── ventas/
+│   │   │   ├── inventario/
+│   │   │   └── ...
+│   │   ├── assets/
+│   │   └── environments/
+│   ├── Dockerfile
 │   └── package.json
 │
-└── README.md
-```
+├── docker-compose.yml
+├── .env.example
+└── README.md (this file)
+---
+
+## 🐛 Reportar Issues
+
+¿Encontraste un bug? ¿Tienes una sugerencia?
+
+- Abre un [GitHub Issue](https://github.com/tu-usuario/ferreteria-victoria-pos-demo/issues)
+- Describe el problema con claridad
+- Incluye screenshots si es relevante
+## 📝 License
+
+Este proyecto está bajo la licencia [MIT](./LICENSE).
 
 ---
 
-## ⚙️ Arquitectura del sistema
+## 👤 Autor
 
-```
-Múltiples cajeros (navegador)
-        │
-        ▼
-  Angular 21 Frontend
-  ├── HTTP requests → Django REST Framework
-  └── WebSocket ──→ Django Channels + Redis
-                          │
-                          ▼
-                    PostgreSQL (BD)
-                    
-  Sincronización en tiempo real:
-  Cajero A agrega venta → Redis → Cajero B recibe notificación instantánea
-```
+Desarrollado por Isaac Kson
+
+- GitHub: [@isackson99](https://github.com/isackson99)
+- Email: tu-email@example.com
 
 ---
 
-## 🚀 Cómo ejecutar localmente
+## 🙏 Agradecimientos
 
-### Requisitos previos
-- Python 3.13+
-- Node.js 20+
-- PostgreSQL
-- Redis (en WSL si usas Windows)
-
-### Backend
-```bash
-cd backend
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-
-# Configurar variables de entorno
-cp .env.example .env
-# Editar .env con tus credenciales de PostgreSQL
-
-python manage.py migrate
-python manage.py createsuperuser
-python manage.py runserver
-```
-
-### Frontend
-```bash
-cd frontend
-npm install
-ng serve
-```
-
-### Redis (Windows con WSL)
-```bash
-wsl
-redis-server
-```
+- Django & DRF community
+- Angular community
+- PostgreSQL & Redis
 
 ---
 
-## 🔐 Variables de entorno
+## 📞 Soporte
 
-Crear un archivo `.env` en `/backend/` basado en `.env.example`:
+¿Preguntas sobre cómo deployar o usar la demo?
 
-```env
-SECRET_KEY=tu_secret_key_aqui
-DEBUG=True
-DB_NAME=ferreteria_db
-DB_USER=tu_usuario
-DB_PASSWORD=tu_password
-DB_HOST=localhost
-DB_PORT=5432
-REDIS_URL=redis://localhost:6379
-```
-
----
-
-## 🧠 Desafíos técnicos superados
-
-- **Sincronización en tiempo real** entre múltiples cajeros mediante WebSockets con Django Channels y Redis
-- **Impresión térmica directa** desde el navegador (80mm/58mm) sin drivers externos
-- **Cálculo dinámico de stock** para productos tipo kit basado en sus componentes en tiempo real
-- **Productos a granel** con decimales y activación automática de precio mayoreo por cantidad
-- **Migración de SQLite a PostgreSQL** en producción sin pérdida de datos
-- **Acceso multi-dispositivo** en red local con autofocus inteligente en input de código de barras
-- **Estado reactivo sin NgRx** usando Angular Signals y BehaviorSubject
-
----
-
-## 🔒 Seguridad implementada
-
-- Autenticación JWT con blacklist de tokens al cerrar sesión
-- Rate limiting en endpoints críticos
-- Sanitización de inputs
-- Headers de seguridad HTTP
-- Permisos granulares por rol de usuario
-
----
-
-## 👨‍💻 Autor
-
-**Isaac Serrano**  
-Ingeniero en Informática — DUOC UC, Viña del Mar
-
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-isaac--serrano99-blue?style=flat&logo=linkedin)](https://www.linkedin.com/in/isaac-serrano99/)
-[![GitHub](https://img.shields.io/badge/GitHub-isackson99-black?style=flat&logo=github)](https://github.com/isackson99)
-[![Gmail](https://img.shields.io/badge/Gmail-isaac82015@gmail.com-red?style=flat&logo=gmail)](mailto:isaac82015@gmail.com)
-
----
-
-## 📜 Licencia y derechos de autor
-
-© 2025 **Isaac Serrano Cuauro**. Todos los derechos reservados.
-
-Este código se publica con fines de **demostración profesional y portafolio**.
-No se autoriza su uso comercial, redistribución ni despliegue en producción
-por terceros sin autorización escrita del autor.
-
-Para consultas sobre licenciamiento o colaboraciones: isaac82015@gmail.com
-
-Esta obra se encuentra protegida por la Ley N° 17.336 sobre Propiedad
-Intelectual de la República de Chile.
+- Abre un Issue con etiqueta `question`
+- Revisa la documentación en `SETUP.md` y `DEMO.md`

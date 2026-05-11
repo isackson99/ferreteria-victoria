@@ -1,0 +1,56 @@
+services:
+  db:
+    image: postgres:16
+    restart: always
+    environment:
+      POSTGRES_DB: ferreteria_demo
+      POSTGRES_USER: demo_user
+      POSTGRES_PASSWORD: demo_pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U demo_user -d ferreteria_demo"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    ports:
+      - "6379:6379"
+
+  backend:
+    build: ./backend
+    restart: always
+    environment:
+      DEBUG: 'True'
+      SECRET_KEY: 'demo-secret-key-only-for-demo-not-production'
+      ALLOWED_HOSTS: 'localhost,127.0.0.1,backend'
+      CSRF_TRUSTED_ORIGINS: 'http://localhost:4200,http://127.0.0.1:4200,http://localhost,http://127.0.0.1'
+      DATABASE_URL: 'postgres://demo_user:demo_pass@db:5432/ferreteria_demo'
+      DB_HOST: db
+      DB_PORT: '5432'
+      REDIS_URL: 'redis://redis:6379/0'
+    volumes:
+      - ./backend/backups:/app/backups
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  frontend:
+    build: ./frontend
+    restart: always
+    ports:
+      - "4200:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
