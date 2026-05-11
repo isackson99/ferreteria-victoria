@@ -44,7 +44,7 @@ Este es un **proyecto de demostración** que muestra todas las funcionalidades d
 
 1. **Clonar repositorio**
 ```bash
-   git clone https://github.com/tu-usuario/ferreteria-victoria-pos-demo.git
+   git clone https://github.com/isackson99/ferreteria-victoria.git
    cd ferreteria-victoria-pos-demo
 ```
 
@@ -154,24 +154,6 @@ ferreteria-victoria-pos-demo/
 ```
 ---
 
-### **Explicación de estructura:**
-
-| Directorio | Descripción |
-|-----------|-----------|
-| **backend/** | API REST con Django + DRF |
-| **frontend/** | Aplicación Angular 21 |
-| **backend/apps/** | Módulos: ventas, inventario, clientes, créditos, usuarios |
-| **frontend/src/environments/** | Configuración por ambiente (dev, demo, prod) |
-| **backend/fixtures/** | Datos de demostración para la BD |
-| **docker-compose.yml** | Orquesta todos los servicios |
-
-## 🐛 Reportar Issues
-
-¿Encontraste un bug? ¿Tienes una sugerencia?
-
-- Abre un [GitHub Issue](https://github.com/tu-usuario/ferreteria-victoria-pos-demo/issues)
-- Describe el problema con claridad
-- Incluye screenshots si es relevante
 ## 📝 License
 
 Este proyecto está bajo la licencia [MIT](./LICENSE).
@@ -192,12 +174,3 @@ Desarrollado por Isaac Kson
 - Django & DRF community
 - Angular community
 - PostgreSQL & Redis
-
----
-
-## 📞 Soporte
-
-¿Preguntas sobre cómo deployar o usar la demo?
-
-- Abre un Issue con etiqueta `question`
-- Revisa la documentación en `SETUP.md` y `DEMO.md`
